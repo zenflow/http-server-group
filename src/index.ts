@@ -1,10 +1,14 @@
 /*
+  TODO: ensure SIGTERM propagates to child processes
+    https://www.npmjs.com/package/execa
+    https://www.npmjs.com/package/signal-exit
+  TODO: fixup CI (make sure build is available in test phase, disable coverage)
+  TODO: clean up dist dir (no dev vs prod builds; simpler filenames)
+  TODO: more tests :p
   TODO: port option
   TODO: default `servers[].port` using port finder
   TODO: `config.server.command` alternative `config.server.script`
   TODO: crash if one of the child processes crashes
-  TODO: ensure SIGTERM propagates to child processes
-    https://github.com/Tapppi/async-exit-hook
   TODO: fix character encoding (refer to next.js build output)
 
   Feature ideas:
@@ -76,7 +80,7 @@ ${formatConfig(normalizedConfig)}
   const proxyProcess = createServerProcess({
     label: '$proxy',
     env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(normalizedConfig) },
-    command: `node ${__dirname}/proxy.ts`,
+    command: `node ${__dirname}/http-server-group-proxy.cjs.development.js`,
     host: 'localhost',
     port: parseInt(process.env.PORT as string, 10),
   })

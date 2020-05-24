@@ -13,12 +13,13 @@
     "src"
   ],
   "scripts": {
-    "start": "tsdx watch --target node",
-    "build": "tsdx build --target node",
+    "build": "tsdx build --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
+    "build-watch": "tsdx watch --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
     "test": "tsdx test",
+    "test-watch": "tsdx test --watch",
     "lint": "tsdx lint",
     "lint-fix": "tsdx lint --fix",
-    "prepublishOnly": "tsdx build --target node"
+    "prepublishOnly": "tsdx build --target node --format cjs --entry src/index.ts --entry src/proxy.ts"
   },
   "dependencies": {
     "connect": "^3.7.0",
@@ -33,6 +34,7 @@
     "@types/merge-stream": "^1.1.2",
     "@types/split": "^1.0.0",
     "@types/tcp-port-used": "^1.0.0",
+    "isomorphic-unfetch": "^3.0.0",
     "tsdx": "^0.13.2",
     "tslib": "^2.0.0",
     "typescript": "^3.9.3"
