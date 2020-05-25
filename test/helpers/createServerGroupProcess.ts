@@ -18,8 +18,14 @@ export async function createServerGroupProcess(port: number, config: Config) {
   }
   await waitUntilUsed(port, 100, 5000)
   const destroy = async () => {
-    const finished = once(proc, 'exit')
-    proc.kill()
+    const finished = Promise.all([
+      once(proc, 'exit'),
+      once(proc.stdout, 'close'),
+      once(proc.stderr, 'close'),
+    ])
+    proc.kill('SIGTERM')
+    proc.stdout.destroy()
+    proc.stderr.destroy()
     await finished
   }
   return { destroy }
