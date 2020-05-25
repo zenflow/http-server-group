@@ -6,7 +6,6 @@
     "node": ">=12"
   },
   "main": "dist/index.js",
-  "module": "dist/http-server-group.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
