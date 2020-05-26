@@ -12,14 +12,15 @@
     "src"
   ],
   "scripts": {
-    "build": "tsdx build --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
-    "build-watch": "tsdx watch --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
+    "_build": "tsdx --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
+    "build": "yarn _build build",
+    "build-watch": "yarn _build watch",
     "test": "tsdx test --maxWorkers=1",
     "test-watch": "yarn test --watch",
     "test-ci": "yarn test --ci",
     "lint": "tsdx lint",
     "lint-fix": "tsdx lint --fix",
-    "prepublishOnly": "tsdx build --target node --format cjs --entry src/index.ts --entry src/proxy.ts"
+    "prepublishOnly": "yarn _build build"
   },
   "dependencies": {
     "connect": "^3.7.0",
