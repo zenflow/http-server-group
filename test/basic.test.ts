@@ -5,30 +5,7 @@ import {
   createServerGroupProcess,
   // @ts-ignore
 } from './helpers/createServerGroupProcess'
-import {
-  waitUntilUsed,
-  waitUntilFree,
-  check as isPortUsed,
-} from 'tcp-port-used'
-
-const port = 3000
-
-const simpleConfig = {
-  servers: [
-    {
-      label: 'a',
-      command: `node ${__dirname}/fixtures/server-a.js`,
-      port: 3001,
-      paths: ['/a'],
-    },
-    {
-      label: 'b',
-      command: `node ${__dirname}/fixtures/server-b.js`,
-      port: 3002,
-      paths: ['/b'],
-    },
-  ],
-}
+import { check as isPortUsed } from 'tcp-port-used'
 
 describe('basic', () => {
   jest.setTimeout(60 * 1000)
@@ -36,21 +13,47 @@ describe('basic', () => {
   afterEach(async () => {
     if (serverGroupProc) {
       await serverGroupProc.destroy()
-      await waitUntilFree(port, 100, 5000)
     }
   })
   it('starts and stops', async () => {
-    expect(await isPortUsed(port)).toBe(false)
-    serverGroupProc = createServerGroupProcess(port, simpleConfig)
-    await waitUntilUsed(port, 100, 5000)
+    const port = 3000
+    const childPort = 3001
+    expect(await isPortUsed(port)).toBe(false) // note that failure here is not a fault in the library
+    serverGroupProc = await createServerGroupProcess(port, {
+      servers: [
+        {
+          label: 'child',
+          env: { KEY: 'child' },
+          command: ['node', `${__dirname}/fixtures/server-node.js`],
+          port: childPort,
+          paths: ['/'],
+        },
+      ],
+    })
     expect(await isPortUsed(port)).toBe(true)
     await serverGroupProc.destroy()
-    await waitUntilFree(port, 100, 5000)
     expect(await isPortUsed(port)).toBe(false)
   })
   it('works', async () => {
-    serverGroupProc = createServerGroupProcess(port, simpleConfig)
-    await waitUntilUsed(port, 100, 5000)
+    const port = 3000
+    serverGroupProc = await createServerGroupProcess(port, {
+      servers: [
+        {
+          label: 'a',
+          env: { KEY: 'a' },
+          command: ['node', `${__dirname}/fixtures/server-node.js`],
+          port: 3001,
+          paths: ['/a'],
+        },
+        {
+          label: 'b',
+          env: { KEY: 'b' },
+          command: ['node', `${__dirname}/fixtures/server-node.js`],
+          port: 3002,
+          paths: ['/b'],
+        },
+      ],
+    })
     const [aText, bText] = await Promise.all([
       fetchText(`http://localhost:${port}/a`),
       fetchText(`http://localhost:${port}/b`),
@@ -58,4 +61,5 @@ describe('basic', () => {
     expect(aText).toEqual('a')
     expect(bText).toEqual('b')
   })
+  // it('fails on startup')
 })

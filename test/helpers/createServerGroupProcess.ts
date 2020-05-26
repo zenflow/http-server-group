@@ -1,17 +1,19 @@
-import { spawn, ChildProcess } from 'child_process'
+import { spawn /*, ChildProcess*/ } from 'child_process'
 import { join } from 'path'
+// import { once } from 'events'
 import treeKill from 'tree-kill'
 // @ts-ignore
 import { Config } from '../..'
+import { waitUntilFree, waitUntilUsed } from 'tcp-port-used'
 
 export interface ServerGroupProcess {
   destroy(): Promise<void>
 }
 
-export function createServerGroupProcess(
+export async function createServerGroupProcess(
   port: number,
   config: Config
-): ServerGroupProcess {
+): Promise<ServerGroupProcess> {
   const env = {
     ...process.env,
     PORT: String(port),
@@ -22,18 +24,25 @@ export function createServerGroupProcess(
   for (const stream of [proc.stdout, proc.stderr]) {
     stream.on('data', line => console.log(line.toString('utf8')))
   }
-  const destroy = getChildProcessDestroyer(proc)
-  return { destroy }
-}
-
-function getChildProcessDestroyer(proc: ChildProcess) {
   let destroyedPromise: Promise<void> | null = null
-  return function destroyChildProcess(): Promise<void> {
+  const destroy = function destroyChildProcess(): Promise<void> {
     if (!destroyedPromise) {
-      destroyedPromise = treeKillP(proc.pid)
+      destroyedPromise = treeKillP(proc.pid).then(() =>
+        /* Note on windows the following waitUntilFree call will resolve immediately, & is not really necessary.
+        It seems this is because having no diff between SIGINT & SIGKILL [on windows] the first/only signal is like SIGKILL. */
+        waitUntilFree(port, 100, 5000)
+      )
     }
     return destroyedPromise
   }
+  // TODO: assert `server[].port`s
+  try {
+    await waitUntilUsed(port, 100, 5000)
+  } catch (error) {
+    await destroy()
+    throw error
+  }
+  return { destroy }
 }
 
 function treeKillP(pid: number): Promise<void> {
