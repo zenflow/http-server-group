@@ -5,7 +5,11 @@ import {
   createServerGroupProcess,
   // @ts-ignore
 } from './helpers/createServerGroupProcess'
-import { waitUntilUsed, check as isPortUsed } from 'tcp-port-used'
+import {
+  waitUntilUsed,
+  waitUntilFree,
+  check as isPortUsed,
+} from 'tcp-port-used'
 
 const port = 3000
 
@@ -27,11 +31,12 @@ const simpleConfig = {
 }
 
 describe('basic', () => {
-  jest.setTimeout(30000)
+  jest.setTimeout(60 * 1000)
   let serverGroupProc: ServerGroupProcess | null = null
   afterEach(async () => {
     if (serverGroupProc) {
       await serverGroupProc.destroy()
+      await waitUntilFree(port, 100, 5000)
     }
   })
   it('starts and stops', async () => {
@@ -40,6 +45,7 @@ describe('basic', () => {
     await waitUntilUsed(port, 100, 5000)
     expect(await isPortUsed(port)).toBe(true)
     await serverGroupProc.destroy()
+    await waitUntilFree(port, 100, 5000)
     expect(await isPortUsed(port)).toBe(false)
   })
   it('works', async () => {
