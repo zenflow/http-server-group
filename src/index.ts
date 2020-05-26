@@ -80,7 +80,10 @@ ${formatConfig(normalizedConfig)}
   const proxyProcess = createServerProcess({
     label: '$proxy',
     env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(normalizedConfig) },
-    command: `node ${__dirname}/http-server-group-proxy.cjs.development.js`,
+    command: [
+      'node',
+      `${__dirname}/http-server-group-proxy.cjs.development.js`,
+    ],
     host: 'localhost',
     port: parseInt(process.env.PORT as string, 10),
   })
@@ -94,7 +97,7 @@ ${formatConfig(normalizedConfig)}
 interface ServerProcessConfig {
   label: string
   env: object
-  command: string
+  command: string | Array<string>
   host: string
   port: number
 }
@@ -128,11 +131,15 @@ class Logger extends PassThrough {
   }
 }
 
-function createProcess(command: string, env: object) {
-  const proc = spawn(command, {
-    shell: true,
-    env: { ...process.env, ...env },
-  })
+function createProcess(command: string | Array<string>, env: object) {
+  const proc = Array.isArray(command)
+    ? spawn(command[0], command.slice(1), {
+        env: { ...process.env, ...env },
+      })
+    : spawn(command, {
+        shell: true,
+        env: { ...process.env, ...env },
+      })
   const stdout = proc.stdout.pipe(splitStream())
   const stderr = proc.stderr.pipe(splitStream())
   const stdOutAndStdErr = mergeStream(

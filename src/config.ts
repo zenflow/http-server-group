@@ -6,7 +6,7 @@ export type Falsy = false | null | undefined
 export interface ServerConfig {
   label?: string
   env?: object
-  command: string
+  command: string | Array<string>
   host?: string
   port: number
   paths?: Array<string>
@@ -19,7 +19,7 @@ export interface Config {
 export interface NormalizedServerConfig {
   label: string
   env: object
-  command: string
+  command: string | Array<string>
   host: string
   port: number
   paths: Array<string>

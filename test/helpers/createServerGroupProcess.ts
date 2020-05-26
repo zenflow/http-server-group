@@ -12,7 +12,8 @@ export async function createServerGroupProcess(port: number, config: Config) {
     PORT: String(port),
     CONFIG: JSON.stringify(config),
   }
-  const proc = spawn(command, { shell: true, env })
+  const script = join(__dirname, '../fixtures/server-group.js')
+  const proc = spawn('node', [script], { env })
   for (const stream of [proc.stdout, proc.stderr]) {
     stream.on('data', line => console.log(line.toString('utf8')))
   }
