@@ -37,6 +37,6 @@ jobs:
           CI: true
 
       - name: Test
-        run: yarn test --ci --maxWorkers=2
+        run: yarn test-ci
         env:
           CI: true

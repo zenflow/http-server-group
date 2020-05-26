@@ -1,14 +1,14 @@
 /*
-  TODO: ensure SIGTERM propagates to child processes
-    https://www.npmjs.com/package/execa
-    https://www.npmjs.com/package/signal-exit
-  TODO: fixup CI (make sure build is available in test phase, disable coverage)
   TODO: clean up dist dir (no dev vs prod builds; simpler filenames)
   TODO: more tests :p
   TODO: port option
   TODO: default `servers[].port` using port finder
   TODO: `config.server.command` alternative `config.server.script`
   TODO: crash if one of the child processes crashes
+  TODO: ensure SIGTERM propagates to child processes
+    https://www.npmjs.com/package/execa
+    https://www.npmjs.com/package/signal-exit
+    https://www.npmjs.com/package/tree-kill
   TODO: fix character encoding (refer to next.js build output)
 
   Feature ideas:
@@ -146,5 +146,5 @@ function createProcess(command: string | Array<string>, env: object) {
     stdout.pipe(mapStream(line => `[out] ${line}\n`)),
     stderr.pipe(mapStream(line => `[ERR] ${line}\n`))
   )
-  return { proc, stdout, stderr, stdOutAndStdErr }
+  return { stdOutAndStdErr }
 }

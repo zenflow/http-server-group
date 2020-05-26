@@ -20,6 +20,4 @@ config.servers
   )
   .forEach(middleware => app.use(middleware as HandleFunction))
 
-app.listen(process.env.PORT as string, (error: any) => {
-  if (error) throw error
-})
+app.listen(process.env.PORT as string)

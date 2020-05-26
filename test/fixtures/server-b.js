@@ -5,6 +5,4 @@ const server = createServer((_, res) => {
   res.end()
 })
 
-server.listen(process.env.PORT, error => {
-  if (error) throw error
-})
+server.listen(process.env.PORT)
