@@ -9,18 +9,19 @@
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/delete_me",
     "src"
   ],
   "scripts": {
     "_build": "tsdx --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
-    "build": "yarn _build build",
+    "build": "yarn _build build && shx rm -rf dist/delete_me",
     "build-watch": "yarn _build watch",
     "test": "tsdx test --maxWorkers=1",
     "test-watch": "yarn test --watch",
     "test-ci": "yarn test --ci",
     "lint": "tsdx lint",
     "lint-fix": "tsdx lint --fix",
-    "prepublishOnly": "yarn _build build"
+    "prepublishOnly": "yarn build"
   },
   "dependencies": {
     "connect": "^3.7.0",
@@ -37,6 +38,7 @@
     "@types/split": "^1.0.0",
     "@types/tcp-port-used": "^1.0.0",
     "isomorphic-unfetch": "^3.0.0",
+    "shx": "^0.3.2",
     "tsdx": "^0.13.2",
     "tslib": "^2.0.0",
     "typescript": "^3.9.3"

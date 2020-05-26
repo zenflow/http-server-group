@@ -61,10 +61,7 @@ ${formatConfig(normalizedConfig)}
   const proxyProcess = createServerProcess({
     label: '$proxy',
     env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(normalizedConfig) },
-    command: [
-      'node',
-      `${__dirname}/http-server-group-proxy.cjs.development.js`,
-    ],
+    command: ['node', `${__dirname}/proxy.js`],
     host: 'localhost',
     port: parseInt(process.env.PORT as string, 10),
   })

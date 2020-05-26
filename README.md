@@ -3,9 +3,9 @@ Run multiple http servers as one
 
 ## Roadmap
 
-- clean up dist dir (no dev vs prod builds; simpler filenames)
 - fix formatting & do snapshot testing
 - it("doesn't work"): sync startup error, async startup error, crash, end, doesn't serve, doesn't shut down(linux)
+- test options
 - preflight port check
 - use npm-run-path
 - default `servers[].port` using port finder
