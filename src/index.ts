@@ -1,23 +1,4 @@
 /*
-  TODO: clean up dist dir (no dev vs prod builds; simpler filenames)
-  TODO: more tests :p
-  TODO: port option
-  TODO: default `servers[].port` using port finder
-  TODO: `config.server.command` alternative `config.server.script`
-  TODO: crash if one of the child processes crashes
-  TODO: ensure SIGTERM propagates to child processes
-    https://www.npmjs.com/package/execa
-    https://www.npmjs.com/package/signal-exit
-    https://www.npmjs.com/package/tree-kill
-  TODO: fix character encoding (refer to next.js build output)
-
-  Feature ideas:
-    - `config.server.scale` (positive integer) https://nodejs.org/docs/latest/api/cluster.html
-    - `config.server.handleExit` ('exit', 'restart', or function)
-      - buffer requests during downtime, and apply proxy middleware only once up again
-    - `config.server.dependencies` (array of labels of servers to wait for to be ready before starting this server)
-    - `config.server.readyTimeout`
-
  */
 import { spawn } from 'child_process'
 import { PassThrough, Readable } from 'stream'
