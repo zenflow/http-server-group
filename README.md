@@ -3,7 +3,7 @@ Run multiple http servers as one
 
 ## Roadmap
 
-- fix formatting & do snapshot testing
+- fix stdout/stderr formatting
 - it("doesn't work"): sync startup error, async startup error, crash, end, doesn't serve, doesn't shut down(linux)
 - test options
 - preflight port check

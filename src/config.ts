@@ -45,33 +45,8 @@ export function validateAndNormalizeConfig(config: Config): NormalizedConfig {
     } = server
     assert(command, `Missing \`command\` for '${label}' server`)
     assert(port, `Missing \`port\` for '${label}' server`)
-    return { label, command, host, port, env, paths, proxyOptions }
+    return { label, env, command, host, port, paths, proxyOptions }
   })
   assert(servers.length > 0, 'Must specify at least one server')
   return { proxyOptions, servers }
-}
-
-export function formatConfig(config: NormalizedConfig): string {
-  const result = []
-  if (Object.entries(config.proxyOptions).length) {
-    result.push(`  proxyOptions: ${JSON.stringify(config.proxyOptions)}`)
-  }
-  result.push('  servers:')
-  config.servers.forEach(
-    ({ label, env, command, host, port, paths, proxyOptions }) => {
-      result.push(`    - ${label}:`)
-      if (Object.entries(env).length) {
-        result.push(`        env: ${JSON.stringify(env)}`)
-      }
-      result.push(`        command: ${command}`)
-      result.push(`        origin: http://${host}:${port}`)
-      result.push(
-        `        paths: ${paths.length ? paths.join(', ') : '(none)'}`
-      )
-      if (Object.entries(proxyOptions).length) {
-        result.push(`        proxyOptions: ${JSON.stringify(proxyOptions)}`)
-      }
-    }
-  )
-  return result.join('\n')
 }

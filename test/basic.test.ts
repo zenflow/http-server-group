@@ -1,11 +1,36 @@
+import { check as isPortUsed } from 'tcp-port-used'
 // @ts-ignore
 import { fetchText } from './helpers/fetchText'
 import {
-  ServerGroupProcess,
   createServerGroupProcess,
+  ServerGroupProcess,
   // @ts-ignore
 } from './helpers/createServerGroupProcess'
-import { check as isPortUsed } from 'tcp-port-used'
+// @ts-ignore
+import { sortLinesByLabel } from './helpers/sortLinesByLabel'
+
+const pkg = require('../package.json')
+
+const serverNodeScript = 'test/fixtures/server-node.js'
+
+const basicConfig = {
+  servers: [
+    {
+      label: 'a',
+      env: { KEY: 'a' },
+      command: ['node', serverNodeScript],
+      port: 3001,
+      paths: ['/a'],
+    },
+    {
+      label: 'b',
+      env: { KEY: 'b' },
+      command: `node ${serverNodeScript}`,
+      port: 3002,
+      paths: ['/b'],
+    },
+  ],
+}
 
 describe('basic', () => {
   jest.setTimeout(60 * 1000)
@@ -16,50 +41,65 @@ describe('basic', () => {
     }
   })
   it('starts and stops', async () => {
-    const port = 3000
-    const childPort = 3001
-    expect(await isPortUsed(port)).toBe(false) // note that failure here is not a fault in the library
-    serverGroupProc = await createServerGroupProcess(port, {
-      servers: [
-        {
-          label: 'child',
-          env: { KEY: 'child' },
-          command: ['node', `${__dirname}/fixtures/server-node.js`],
-          port: childPort,
-          paths: ['/'],
-        },
-      ],
-    })
-    expect(await isPortUsed(port)).toBe(true)
+    const arePortsUsed = (ports: number[]) =>
+      Promise.all(ports.map(port => isPortUsed(port)))
+    const isSomePortUsed = async (ports: number[]) =>
+      (await arePortsUsed(ports)).some(used => used)
+    const isEveryPortUsed = async (ports: number[]) =>
+      (await arePortsUsed(ports)).every(used => used)
+    const ports = [3000, 3001, 3002]
+    expect(await isSomePortUsed(ports)).toBe(false) // note that failure here is not a fault in the library
+    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
+    expect(await isEveryPortUsed(ports)).toBe(true)
     await serverGroupProc.destroy()
-    expect(await isPortUsed(port)).toBe(false)
+    expect(await isSomePortUsed(ports)).toBe(false)
   })
   it('works', async () => {
-    const port = 3000
-    serverGroupProc = await createServerGroupProcess(port, {
-      servers: [
-        {
-          label: 'a',
-          env: { KEY: 'a' },
-          command: ['node', `${__dirname}/fixtures/server-node.js`],
-          port: 3001,
-          paths: ['/a'],
-        },
-        {
-          label: 'b',
-          env: { KEY: 'b' },
-          command: ['node', `${__dirname}/fixtures/server-node.js`],
-          port: 3002,
-          paths: ['/b'],
-        },
-      ],
-    })
+    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
     const [aText, bText] = await Promise.all([
-      fetchText(`http://localhost:${port}/a`),
-      fetchText(`http://localhost:${port}/b`),
+      fetchText('http://localhost:3000/a'),
+      fetchText('http://localhost:3000/b'),
     ])
     expect(aText).toEqual('a')
     expect(bText).toEqual('b')
   })
-  // it('fails on startup')
+  it('has consistent output', async () => {
+    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
+
+    const initialOutput = serverGroupProc.output.splice(0)
+    const labels = ['$manager', '$proxy', 'a', 'b']
+    const deterministicOutput = sortLinesByLabel(labels, initialOutput)
+    // mutate `deterministicOutput`, so that it's deterministic, so that it can be snapshotted
+    {
+      // Version number on first line can vary
+      const firstLine = deterministicOutput.$manager.splice(0, 1)[0]
+      expect(firstLine).toBe(
+        `$manager | http-server-group version ${pkg.version}`
+      )
+      // Either server (a or b) can start first
+      const aStartedIndex = deterministicOutput.$manager.indexOf(
+        `$manager | Started 'a' @ http://localhost:3001`
+      )
+      const bStartedIndex = deterministicOutput.$manager.indexOf(
+        `$manager | Started 'b' @ http://localhost:3002`
+      )
+      expect(aStartedIndex).not.toBe(-1)
+      expect(bStartedIndex).not.toBe(-1)
+      expect(Math.abs(aStartedIndex - bStartedIndex)).toBe(1)
+      const firstStartedIndex = Math.min(aStartedIndex, bStartedIndex)
+      const secondStartedIndex = Math.max(aStartedIndex, bStartedIndex)
+      const aStartedLine = deterministicOutput.$manager[aStartedIndex]
+      const bStartedLine = deterministicOutput.$manager[bStartedIndex]
+      deterministicOutput.$manager[firstStartedIndex] = aStartedLine
+      deterministicOutput.$manager[secondStartedIndex] = bStartedLine
+    }
+    expect(deterministicOutput).toMatchSnapshot()
+
+    // TODO: send some requests and check output, once proxy has logger
+
+    await serverGroupProc.destroy()
+
+    const finalOutput = serverGroupProc.output.splice(0)
+    expect(finalOutput).toMatchSnapshot()
+  })
 })

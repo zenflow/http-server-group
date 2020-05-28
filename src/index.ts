@@ -6,17 +6,16 @@ import splitStream from 'split'
 import mergeStream from 'merge-stream'
 import { waitUntilUsedOnHost } from 'tcp-port-used'
 import {
-  validateAndNormalizeConfig,
-  formatConfig,
   Config,
   ProxyOptions,
   ServerConfig,
+  validateAndNormalizeConfig,
 } from './config'
 import { assert, mapStream, rightPad } from './util'
 
 export { Config, ProxyOptions, ServerConfig }
 
-const { version } = require('../package.json')
+const pkg = require('../package.json')
 
 const dummyMergedStream = mergeStream()
 type MergedStream = typeof dummyMergedStream
@@ -27,10 +26,14 @@ export async function startHttpServerGroup(config: Config): Promise<void> {
   assert(!started, 'Cannot start more than once')
   started = true
 
+  const host = 'localhost'
+  const port = parseInt(process.env.PORT as string, 10)
   const normalizedConfig = validateAndNormalizeConfig(config)
 
+  const managerLabel = '$manager'
   const proxyLabel = '$proxy'
   const maxLabelLength = Math.max(
+    managerLabel.length,
     proxyLabel.length,
     ...normalizedConfig.servers.map(({ label }) => label.length)
   )
@@ -44,30 +47,32 @@ export async function startHttpServerGroup(config: Config): Promise<void> {
   output.pipe(process.stdout)
 
   const logger = new Logger()
-  output.add(logger)
+  output.add(labelStream(managerLabel, logger))
   logger.log(`\
-http-server-group version: ${version}
-http-server-group config:
-${formatConfig(normalizedConfig)}
-`)
+http-server-group version ${pkg.version}
+http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`)
 
-  const serverProcesses = normalizedConfig.servers.map(createServerProcess)
+  const serverProcesses = normalizedConfig.servers.map(serverConfig =>
+    createServerProcess(logger, serverConfig)
+  )
   output.add(
     serverProcesses.map(proc => labelStream(proc.label, proc.outputStream))
   )
 
   await Promise.all(serverProcesses.map(proc => proc.ready))
 
-  const proxyProcess = createServerProcess({
+  const proxyProcess = createServerProcess(logger, {
     label: '$proxy',
     env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(normalizedConfig) },
     command: ['node', `${__dirname}/proxy.js`],
-    host: 'localhost',
-    port: parseInt(process.env.PORT as string, 10),
+    host,
+    port,
   })
   output.add(labelStream(proxyProcess.label, proxyProcess.outputStream))
 
   await proxyProcess.ready
+
+  logger.log('Ready')
 }
 
 // TODO: move everything below this line to separate modules
@@ -80,22 +85,18 @@ interface ServerProcessConfig {
   port: number
 }
 
-function createServerProcess(config: ServerProcessConfig) {
+function createServerProcess(logger: Logger, config: ServerProcessConfig) {
   const { label, env, command, host, port } = config
-  const outputStream = mergeStream()
-
-  const logger = new Logger()
-  outputStream.add(logger)
 
   // TODO: assert that port is free
 
-  Promise.resolve().then(() => logger.log('Starting...'))
+  logger.log(`Starting '${config.label}'...`)
 
   const proc = createProcess(command, { PORT: port, ...env })
-  outputStream.add(proc.stdOutAndStdErr)
+  const outputStream = proc.stdOutAndStdErr
 
   const ready = waitUntilUsedOnHost(port, host, 500, 2147483647).then(() =>
-    logger.log(`Ready!`)
+    logger.log(`Started '${label}' @ http://${host}:${port}`)
   )
 
   return { label, outputStream, ready }
@@ -118,11 +119,15 @@ function createProcess(command: string | Array<string>, env: object) {
         shell: true,
         env: { ...process.env, ...env },
       })
-  const stdout = proc.stdout.pipe(splitStream())
-  const stderr = proc.stderr.pipe(splitStream())
   const stdOutAndStdErr = mergeStream(
-    stdout.pipe(mapStream(line => `[out] ${line}\n`)),
-    stderr.pipe(mapStream(line => `[ERR] ${line}\n`))
+    proc.stdout
+      .setEncoding('utf8')
+      .pipe(splitStream())
+      .pipe(mapStream(line => `[out] ${line}\n`)),
+    proc.stderr
+      .setEncoding('utf8')
+      .pipe(splitStream())
+      .pipe(mapStream(line => `[ERR] ${line}\n`))
   )
   return { stdOutAndStdErr }
 }
