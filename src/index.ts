@@ -2,16 +2,19 @@
  */
 import { spawn } from 'child_process'
 import { PassThrough, Readable } from 'stream'
+import { once } from 'events'
 import splitStream from 'split'
 import mergeStream from 'merge-stream'
 import { waitUntilUsedOnHost } from 'tcp-port-used'
 import {
   Config,
+  NormalizedConfig,
   ProxyOptions,
   ServerConfig,
   validateAndNormalizeConfig,
 } from './config'
 import { assert, mapStream, rightPad } from './util'
+import { killProcessTree } from './util/killProcessTree'
 
 export { Config, ProxyOptions, ServerConfig }
 
@@ -20,14 +23,20 @@ const pkg = require('../package.json')
 const dummyMergedStream = mergeStream()
 type MergedStream = typeof dummyMergedStream
 
+class Logger extends PassThrough {
+  log(string: string) {
+    string.split('\n').forEach(line => {
+      this.write(`${line}\n`, 'utf8')
+    })
+  }
+}
+
 let started: boolean = false
 
-export async function startHttpServerGroup(config: Config): Promise<void> {
+export function startHttpServerGroup(config: Config): void {
   assert(!started, 'Cannot start more than once')
   started = true
 
-  const host = 'localhost'
-  const port = parseInt(process.env.PORT as string, 10)
   const normalizedConfig = validateAndNormalizeConfig(config)
 
   const managerLabel = '$manager'
@@ -52,27 +61,43 @@ export async function startHttpServerGroup(config: Config): Promise<void> {
 http-server-group version ${pkg.version}
 http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`)
 
-  const serverProcesses = normalizedConfig.servers.map(serverConfig =>
-    createServerProcess(logger, serverConfig)
-  )
-  output.add(
-    serverProcesses.map(proc => labelStream(proc.label, proc.outputStream))
-  )
+  const serverProcesses: ServerProcess[] = []
+  function getServerProcess(config: ServerProcessConfig) {
+    const proc = createServerProcess(logger, config)
+    output.add(labelStream(proc.label, proc.outputStream))
+    serverProcesses.push(proc)
+    return proc
+  }
 
-  await Promise.all(serverProcesses.map(proc => proc.ready))
+  doAsyncStartup(normalizedConfig, getServerProcess)
+    .then(async () => {
+      logger.log('Ready')
+      await Promise.race(serverProcesses.map(({ exitedError }) => exitedError))
+    })
+    .catch(async error => {
+      logger.log(`${error}`)
+      logger.log('Exiting...')
+      await Promise.all(serverProcesses.map(({ kill }) => kill()))
+      logger.log('Exited')
+      process.exit(1)
+    })
+}
 
-  const proxyProcess = createServerProcess(logger, {
+async function doAsyncStartup(
+  config: NormalizedConfig,
+  getServerProcess: (config: ServerProcessConfig) => ServerProcess
+): Promise<void> {
+  const userServerProcesses = config.servers.map(getServerProcess)
+  await Promise.all(userServerProcesses.map(({ ready }) => ready))
+
+  const proxyProcess = getServerProcess({
     label: '$proxy',
-    env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(normalizedConfig) },
+    env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(config) },
     command: ['node', `${__dirname}/proxy.js`],
-    host,
-    port,
+    host: 'localhost',
+    port: parseInt(process.env.PORT as string, 10),
   })
-  output.add(labelStream(proxyProcess.label, proxyProcess.outputStream))
-
   await proxyProcess.ready
-
-  logger.log('Ready')
 }
 
 // TODO: move everything below this line to separate modules
@@ -85,29 +110,49 @@ interface ServerProcessConfig {
   port: number
 }
 
-function createServerProcess(logger: Logger, config: ServerProcessConfig) {
+interface ServerProcess {
+  label: string
+  outputStream: Readable
+  exitedError: Promise<void>
+  ready: Promise<void>
+  kill(): Promise<void>
+}
+
+class ServerProcessExitedError extends Error {
+  label: string
+  constructor(label: string) {
+    super()
+    this.name = 'ServerProcessExitedError'
+    this.label = label
+    this.message = `Server '${label} exited`
+  }
+}
+
+function createServerProcess(
+  logger: Logger,
+  config: ServerProcessConfig
+): ServerProcess {
   const { label, env, command, host, port } = config
 
   // TODO: assert that port is free
 
   logger.log(`Starting '${config.label}'...`)
 
-  const proc = createProcess(command, { PORT: port, ...env })
-  const outputStream = proc.stdOutAndStdErr
+  const { outputStream, exited, kill } = createProcess(command, {
+    PORT: port,
+    ...env,
+  })
 
-  const ready = waitUntilUsedOnHost(port, host, 500, 2147483647).then(() =>
-    logger.log(`Started '${label}' @ http://${host}:${port}`)
+  const exitedError = exited.then(() =>
+    Promise.reject(new ServerProcessExitedError(label))
   )
 
-  return { label, outputStream, ready }
-}
+  const ready = Promise.race([
+    exitedError,
+    waitUntilUsedOnHost(port, host, 500, 2147483647),
+  ]).then(() => logger.log(`Started '${label}' @ http://${host}:${port}`))
 
-class Logger extends PassThrough {
-  log(string: string) {
-    string.split('\n').forEach(line => {
-      this.write(`${line}\n`, 'utf8')
-    })
-  }
+  return { label, outputStream, exitedError, ready, kill }
 }
 
 function createProcess(command: string | Array<string>, env: object) {
@@ -119,7 +164,7 @@ function createProcess(command: string | Array<string>, env: object) {
         shell: true,
         env: { ...process.env, ...env },
       })
-  const stdOutAndStdErr = mergeStream(
+  const outputStream = (mergeStream(
     proc.stdout
       .setEncoding('utf8')
       .pipe(splitStream())
@@ -128,6 +173,17 @@ function createProcess(command: string | Array<string>, env: object) {
       .setEncoding('utf8')
       .pipe(splitStream())
       .pipe(mapStream(line => `[ERR] ${line}\n`))
-  )
-  return { stdOutAndStdErr }
+  ) as unknown) as Readable
+  const exited = once(outputStream, 'end')
+  let killPromise: Promise<void> | null = null
+  function kill(): Promise<void> {
+    if (!killPromise) {
+      killPromise = killProcessTree(proc.pid)
+        .catch(() => {})
+        .then(() => exited)
+        .then(() => {})
+    }
+    return killPromise
+  }
+  return { outputStream, exited, kill }
 }

@@ -2,30 +2,29 @@ import { check as isPortUsed } from 'tcp-port-used'
 // @ts-ignore
 import { fetchText } from './helpers/fetchText'
 import {
-  createServerGroupProcess,
+  getReadyServerGroupProcess,
   ServerGroupProcess,
   // @ts-ignore
-} from './helpers/createServerGroupProcess'
+} from './helpers/serverGroupProcess'
 // @ts-ignore
 import { sortLinesByLabel } from './helpers/sortLinesByLabel'
+import { Config } from '..'
 
 const pkg = require('../package.json')
 
-const serverNodeScript = 'test/fixtures/server-node.js'
-
-const basicConfig = {
+const basicConfig: Config = {
   servers: [
     {
       label: 'a',
       env: { KEY: 'a' },
-      command: ['node', serverNodeScript],
+      command: ['node', 'test/fixtures/server-node-basic.js'],
       port: 3001,
       paths: ['/a'],
     },
     {
       label: 'b',
       env: { KEY: 'b' },
-      command: `node ${serverNodeScript}`,
+      command: `node test/fixtures/server-node-basic.js`,
       port: 3002,
       paths: ['/b'],
     },
@@ -33,11 +32,11 @@ const basicConfig = {
 }
 
 describe('basic', () => {
-  jest.setTimeout(60 * 1000)
+  jest.setTimeout(30 * 1000)
   let serverGroupProc: ServerGroupProcess | null = null
   afterEach(async () => {
     if (serverGroupProc) {
-      await serverGroupProc.destroy()
+      await serverGroupProc.kill()
     }
   })
   it('starts and stops', async () => {
@@ -49,13 +48,13 @@ describe('basic', () => {
       (await arePortsUsed(ports)).every(used => used)
     const ports = [3000, 3001, 3002]
     expect(await isSomePortUsed(ports)).toBe(false) // note that failure here is not a fault in the library
-    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
+    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
     expect(await isEveryPortUsed(ports)).toBe(true)
-    await serverGroupProc.destroy()
+    await serverGroupProc.kill()
     expect(await isSomePortUsed(ports)).toBe(false)
   })
   it('works', async () => {
-    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
+    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
     const [aText, bText] = await Promise.all([
       fetchText('http://localhost:3000/a'),
       fetchText('http://localhost:3000/b'),
@@ -64,7 +63,7 @@ describe('basic', () => {
     expect(bText).toEqual('b')
   })
   it('has consistent output', async () => {
-    serverGroupProc = await createServerGroupProcess(3000, basicConfig)
+    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
 
     const initialOutput = serverGroupProc.output.splice(0)
     const labels = ['$manager', '$proxy', 'a', 'b']
@@ -97,7 +96,7 @@ describe('basic', () => {
 
     // TODO: send some requests and check output, once proxy has logger
 
-    await serverGroupProc.destroy()
+    await serverGroupProc.kill()
 
     const finalOutput = serverGroupProc.output.splice(0)
     expect(finalOutput).toMatchSnapshot()
