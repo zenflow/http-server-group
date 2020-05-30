@@ -12,6 +12,7 @@ export interface ServerGroupProcess {
   output: string[]
   ready: Promise<void>
   kill(): Promise<void>
+  exited: Promise<void>
 }
 
 export class ServerGroupProcessExitedError extends Error {
@@ -65,7 +66,7 @@ export function createServerGroupProcess(
       throw error
     })
     .then(() => {})
-  return { output, ready, kill }
+  return { output, ready, kill, exited }
 }
 
 export async function getReadyServerGroupProcess(

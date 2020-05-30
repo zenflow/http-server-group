@@ -52,4 +52,17 @@ describe('failure', () => {
       )
     ).toBe(true)
   })
+  it('exits if a server exits after startup', async () => {
+    serverGroupProc = createServerGroupProcess(
+      3000,
+      getErrorConfig('EXIT_AFTER_STARTUP')
+    )
+    await serverGroupProc.ready
+    await serverGroupProc.exited
+    expect(
+      serverGroupProc.output.includes(
+        'a        | [ERR] Error: EXIT_AFTER_STARTUP'
+      )
+    ).toBe(true)
+  })
 })
