@@ -72,7 +72,10 @@ http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`)
   doAsyncStartup(normalizedConfig, getServerProcess)
     .then(async () => {
       logger.log('Ready')
-      await Promise.race(serverProcesses.map(({ exitedError }) => exitedError))
+      const label = await Promise.race(
+        serverProcesses.map(({ exited, label }) => exited.then(() => label))
+      )
+      throw new ServerProcessExitedError(label)
     })
     .catch(async error => {
       logger.log(`${error}`)
@@ -113,9 +116,9 @@ interface ServerProcessConfig {
 interface ServerProcess {
   label: string
   outputStream: Readable
-  exitedError: Promise<void>
-  ready: Promise<void>
+  exited: Promise<void>
   kill(): Promise<void>
+  ready: Promise<void>
 }
 
 class ServerProcessExitedError extends Error {
@@ -124,7 +127,7 @@ class ServerProcessExitedError extends Error {
     super()
     this.name = 'ServerProcessExitedError'
     this.label = label
-    this.message = `Server '${label} exited`
+    this.message = `Server '${label}' exited`
   }
 }
 
@@ -136,23 +139,19 @@ function createServerProcess(
 
   // TODO: assert that port is free
 
-  logger.log(`Starting '${config.label}'...`)
+  logger.log(`Starting '${label}'...`)
 
   const { outputStream, exited, kill } = createProcess(command, {
     PORT: port,
     ...env,
   })
 
-  const exitedError = exited.then(() =>
-    Promise.reject(new ServerProcessExitedError(label))
-  )
-
   const ready = Promise.race([
-    exitedError,
+    exited.then(() => Promise.reject(new ServerProcessExitedError(label))),
     waitUntilUsedOnHost(port, host, 500, 2147483647),
   ]).then(() => logger.log(`Started '${label}' @ http://${host}:${port}`))
 
-  return { label, outputStream, exitedError, ready, kill }
+  return { label, outputStream, exited, kill, ready }
 }
 
 function createProcess(command: string | Array<string>, env: object) {
@@ -174,14 +173,19 @@ function createProcess(command: string | Array<string>, env: object) {
       .pipe(splitStream())
       .pipe(mapStream(line => `[ERR] ${line}\n`))
   ) as unknown) as Readable
-  const exited = once(outputStream, 'end')
+  let didExit = false
+  const exited = once(outputStream, 'end').then(() => {
+    didExit = true
+  })
   let killPromise: Promise<void> | null = null
   function kill(): Promise<void> {
     if (!killPromise) {
-      killPromise = killProcessTree(proc.pid)
-        .catch(() => {})
-        .then(() => exited)
-        .then(() => {})
+      killPromise = Promise.resolve().then(async () => {
+        if (!didExit) {
+          await killProcessTree(proc.pid)
+        }
+        await exited
+      })
     }
     return killPromise
   }

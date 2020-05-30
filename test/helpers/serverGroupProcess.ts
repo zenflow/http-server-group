@@ -36,14 +36,19 @@ export function createServerGroupProcess(
   outputStream.on('data', line => console.log(line))
   const output: string[] = []
   outputStream.on('data', line => output.push(line))
-  const exited: Promise<any> = once(outputStream, 'end')
+  let didExit = false
+  const exited: Promise<any> = once(outputStream, 'end').then(() => {
+    didExit = true
+  })
   let killedPromise: Promise<void> | null = null
   const kill = function killChildProcess(): Promise<void> {
     if (!killedPromise) {
-      killedPromise = killProcessTree(proc.pid)
-        .catch(() => {})
-        .then(() => exited)
-        .then(() => {})
+      killedPromise = Promise.resolve().then(async () => {
+        if (!didExit) {
+          await killProcessTree(proc.pid)
+        }
+        await exited
+      })
     }
     return killedPromise
   }
