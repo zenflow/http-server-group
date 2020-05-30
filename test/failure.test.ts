@@ -8,7 +8,7 @@ import {
 import { Config } from '..'
 
 function getErrorConfig(
-  errorType: 'ERROR_STARTUP_SYNC' | 'ERROR_STARTUP_ASYNC' | 'ERROR_POST_STARTUP'
+  errorType: 'EXIT_DURING_STARTUP' | 'EXIT_AFTER_STARTUP'
 ): Config {
   return {
     servers: [
@@ -41,14 +41,14 @@ describe('failure', () => {
   it('exits if a server exits during startup', async () => {
     serverGroupProc = createServerGroupProcess(
       3000,
-      getErrorConfig('ERROR_STARTUP_ASYNC')
+      getErrorConfig('EXIT_DURING_STARTUP')
     )
     await expect(serverGroupProc.ready).rejects.toThrow(
       ServerGroupProcessExitedError.name
     )
     expect(
       serverGroupProc.output.includes(
-        'a        | [ERR] Error: ERROR_STARTUP_ASYNC'
+        'a        | [ERR] Error: EXIT_DURING_STARTUP'
       )
     ).toBe(true)
   })

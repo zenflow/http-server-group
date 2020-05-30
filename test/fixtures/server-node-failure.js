@@ -1,24 +1,18 @@
 const { createServer } = require('http')
 
-const {
-  ERROR_STARTUP_SYNC,
-  ERROR_STARTUP_ASYNC,
-  ERROR_POST_STARTUP,
-} = process.env
+const { EXIT_DURING_STARTUP, EXIT_AFTER_STARTUP } = process.env
 
 const server = createServer(() => {})
 
-if (ERROR_STARTUP_SYNC) {
-  throw new Error('ERROR_STARTUP_SYNC')
-} else if (ERROR_STARTUP_ASYNC) {
+if (EXIT_DURING_STARTUP) {
   setTimeout(() => {
-    throw new Error('ERROR_STARTUP_ASYNC')
+    throw new Error('EXIT_DURING_STARTUP')
   }, 100)
-} else if (ERROR_POST_STARTUP) {
+} else if (EXIT_AFTER_STARTUP) {
   server.listen(process.env.PORT, error => {
     if (error) throw error
     setTimeout(() => {
-      throw new Error('ERROR_POST_STARTUP')
+      throw new Error('EXIT_AFTER_STARTUP')
     }, 100)
   })
 }
