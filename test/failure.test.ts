@@ -1,7 +1,6 @@
 import {
   createServerGroupProcess,
   ServerGroupProcess,
-  ServerGroupProcessExitedError,
   // @ts-ignore
 } from './helpers/serverGroupProcess'
 // @ts-ignore
@@ -43,9 +42,12 @@ describe('failure', () => {
       3000,
       getErrorConfig('EXIT_DURING_STARTUP')
     )
-    await expect(serverGroupProc.ready).rejects.toThrow(
-      ServerGroupProcessExitedError.name
-    )
+    const started = await Promise.race([
+      serverGroupProc.ready.then(() => true),
+      serverGroupProc.exited.then(() => false),
+    ])
+    expect(started).toBe(false)
+    await serverGroupProc.exited
     expect(
       serverGroupProc.output.includes(
         'a        | [ERR] Error: EXIT_DURING_STARTUP'
@@ -57,7 +59,11 @@ describe('failure', () => {
       3000,
       getErrorConfig('EXIT_AFTER_STARTUP')
     )
-    await serverGroupProc.ready
+    const started = await Promise.race([
+      serverGroupProc.ready.then(() => true),
+      serverGroupProc.exited.then(() => false),
+    ])
+    expect(started).toBe(true)
     await serverGroupProc.exited
     expect(
       serverGroupProc.output.includes(

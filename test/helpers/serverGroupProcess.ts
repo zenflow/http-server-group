@@ -53,19 +53,13 @@ export function createServerGroupProcess(
     }
     return killedPromise
   }
-  const ready: Promise<void> = new Promise((resolve, reject) => {
-    outputStream.on('end', () => reject(new ServerGroupProcessExitedError()))
+  const ready: Promise<void> = new Promise(resolve =>
     outputStream.on('data', line => {
       if (line.match(/^\$manager +\| Ready$/)) {
         resolve()
       }
     })
-  })
-    .catch(async error => {
-      await kill()
-      throw error
-    })
-    .then(() => {})
+  )
   return { output, ready, kill, exited }
 }
 
@@ -74,6 +68,13 @@ export async function getReadyServerGroupProcess(
   config: Config
 ): Promise<ServerGroupProcess> {
   const proc = createServerGroupProcess(port, config)
-  await proc.ready
+  const started = await Promise.race([
+    proc.ready.then(() => true),
+    proc.exited.then(() => false),
+  ])
+  if (!started) {
+    await proc.kill()
+    throw new ServerGroupProcessExitedError()
+  }
   return proc
 }
