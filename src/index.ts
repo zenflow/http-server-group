@@ -18,8 +18,6 @@ import { killProcessTree } from './util/killProcessTree'
 
 export { Config, ProxyOptions, ServerConfig }
 
-const pkg = require('../package.json')
-
 const dummyMergedStream = mergeStream()
 type MergedStream = typeof dummyMergedStream
 
@@ -57,9 +55,11 @@ export function startHttpServerGroup(config: Config): void {
 
   const logger = new Logger()
   output.add(labelStream(managerLabel, logger))
-  logger.log(`\
-http-server-group version ${pkg.version}
-http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`)
+  if (config.printConfig) {
+    logger.log(
+      `http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`
+    )
+  }
 
   const serverProcesses: ServerProcess[] = []
   function getServerProcess(config: ServerProcessConfig) {

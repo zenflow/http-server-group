@@ -10,8 +10,6 @@ import {
 import { sortLinesByLabel } from './helpers/sortLinesByLabel'
 import { Config } from '..'
 
-const pkg = require('../package.json')
-
 const basicConfig: Config = {
   servers: [
     {
@@ -70,11 +68,6 @@ describe('basic', () => {
     const deterministicOutput = sortLinesByLabel(labels, initialOutput)
     // mutate `deterministicOutput`, so that it's deterministic, so that it can be snapshotted
     {
-      // Version number on first line can vary
-      const firstLine = deterministicOutput.$manager.splice(0, 1)[0]
-      expect(firstLine).toBe(
-        `$manager | http-server-group version ${pkg.version}`
-      )
       // Either server (a or b) can start first
       const aStartedIndex = deterministicOutput.$manager.indexOf(
         `$manager | Started 'a' @ http://localhost:3001`
