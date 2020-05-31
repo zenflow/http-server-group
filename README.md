@@ -3,7 +3,6 @@ Run multiple http servers as one
 
 ## Roadmap
 
-- 01-basic 02-failure
 -snapshot-*like* testing
 - throw ServerProcessExitedError in createServerGroupProcess if `exited` resolves & not already exiting manager process
     - a.k.a. make sure we don't throw ServerProcessExitedError more than once

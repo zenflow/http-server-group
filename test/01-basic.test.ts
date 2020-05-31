@@ -8,6 +8,7 @@ import {
 } from './helpers/serverGroupProcess'
 // @ts-ignore
 import { sortLinesByLabel } from './helpers/sortLinesByLabel'
+// @ts-ignore
 import { Config } from '..'
 
 const basicConfig: Config = {
