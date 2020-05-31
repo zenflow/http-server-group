@@ -1,4 +1,3 @@
-import { check as isPortUsed } from 'tcp-port-used'
 // @ts-ignore
 import { fetchText } from './helpers/fetchText'
 import {
@@ -37,20 +36,6 @@ describe('basic', () => {
     if (serverGroupProc) {
       await serverGroupProc.kill()
     }
-  })
-  it('starts and stops', async () => {
-    const arePortsUsed = (ports: number[]) =>
-      Promise.all(ports.map(port => isPortUsed(port)))
-    const isSomePortUsed = async (ports: number[]) =>
-      (await arePortsUsed(ports)).some(used => used)
-    const isEveryPortUsed = async (ports: number[]) =>
-      (await arePortsUsed(ports)).every(used => used)
-    const ports = [3000, 3001, 3002]
-    expect(await isSomePortUsed(ports)).toBe(false) // note that failure here is not a fault in the library
-    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
-    expect(await isEveryPortUsed(ports)).toBe(true)
-    await serverGroupProc.kill()
-    expect(await isSomePortUsed(ports)).toBe(false)
   })
   it('works', async () => {
     serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
