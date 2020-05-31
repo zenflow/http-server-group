@@ -5,7 +5,6 @@ const server = createServer((_, res) => {
   res.end()
 })
 
-console.log('Starting...')
 server.listen(process.env.PORT, error => {
   if (error) throw error
   console.log('Started')

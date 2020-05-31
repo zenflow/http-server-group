@@ -31,14 +31,14 @@ const basicConfig: Config = {
 
 describe('basic', () => {
   jest.setTimeout(30 * 1000)
-  let serverGroupProc: ServerGroupProcess | null = null
+  let proc: ServerGroupProcess | null = null
   afterEach(async () => {
-    if (serverGroupProc) {
-      await serverGroupProc.kill()
+    if (proc) {
+      await proc.kill()
     }
   })
   it('works', async () => {
-    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
+    proc = await getReadyServerGroupProcess(3000, basicConfig)
     const [aText, bText] = await Promise.all([
       fetchText('http://localhost:3000/a'),
       fetchText('http://localhost:3000/b'),
@@ -47,37 +47,33 @@ describe('basic', () => {
     expect(bText).toEqual('b')
   })
   it('has consistent output', async () => {
-    serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
+    proc = await getReadyServerGroupProcess(3000, basicConfig)
 
-    const initialOutput = serverGroupProc.output.splice(0)
-    const labels = ['$proxy', 'a', 'b']
-    const deterministicOutput = sortLinesByLabel(labels, initialOutput)
-    // mutate `deterministicOutput`, so that it's deterministic, so that it can be snapshotted
-    {
-      // Either server (a or b) can start first
-      const aStartedIndex = deterministicOutput[''].indexOf(
-        `Started 'a' @ http://localhost:3001`
-      )
-      const bStartedIndex = deterministicOutput[''].indexOf(
-        `Started 'b' @ http://localhost:3002`
-      )
-      expect(aStartedIndex).not.toBe(-1)
-      expect(bStartedIndex).not.toBe(-1)
-      expect(Math.abs(aStartedIndex - bStartedIndex)).toBe(1)
-      const firstStartedIndex = Math.min(aStartedIndex, bStartedIndex)
-      const secondStartedIndex = Math.max(aStartedIndex, bStartedIndex)
-      const aStartedLine = deterministicOutput[''][aStartedIndex]
-      const bStartedLine = deterministicOutput[''][bStartedIndex]
-      deterministicOutput[''][firstStartedIndex] = aStartedLine
-      deterministicOutput[''][secondStartedIndex] = bStartedLine
-    }
-    expect(deterministicOutput).toMatchSnapshot()
+    const initialOutput = proc.output.splice(0)
+    expect(initialOutput[0]).toBe(`Starting 'a'...`)
+    expect(initialOutput[1]).toBe(`Starting 'b'...`)
+    const aOutStartedLine = initialOutput.indexOf(`a      | [out] Started`)
+    expect(aOutStartedLine).toBeGreaterThan(1)
+    const bOutStartedLine = initialOutput.indexOf(`b      | [out] Started`)
+    expect(bOutStartedLine).toBeGreaterThan(1)
+    const startedALine = initialOutput.indexOf(
+      `Started 'a' @ http://localhost:3001`
+    )
+    expect(startedALine).toBeGreaterThan(aOutStartedLine)
+    const startedBLine = initialOutput.indexOf(
+      `Started 'b' @ http://localhost:3002`
+    )
+    expect(startedBLine).toBeGreaterThan(bOutStartedLine)
+    expect(Math.max(startedALine, startedBLine)).toBe(5)
+    expect(initialOutput[6]).toBe(`Starting '$proxy'...`)
+    expect(initialOutput[7]).toBe(`Started '$proxy' @ http://localhost:3000`)
+    expect(initialOutput[8]).toBe('Ready')
+    expect(initialOutput[9]).toBeUndefined()
 
-    // TODO: send some requests and check output, once proxy has logger
+    await proc.kill()
 
-    await serverGroupProc.kill()
-
-    const finalOutput = serverGroupProc.output.splice(0)
-    expect(finalOutput).toMatchSnapshot()
+    const finalOutput = proc.output.splice(0)
+    expect(finalOutput[0]).toBe('')
+    expect(finalOutput[1]).toBe('')
   })
 })

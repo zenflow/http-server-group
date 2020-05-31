@@ -31,44 +31,32 @@ function getErrorConfig(
 
 describe('failure', () => {
   jest.setTimeout(30 * 1000)
-  let serverGroupProc: ServerGroupProcess | null = null
+  let proc: ServerGroupProcess | null = null
   afterEach(async () => {
-    if (serverGroupProc) {
-      await serverGroupProc.kill()
+    if (proc) {
+      await proc.kill()
     }
   })
   it('exits if a server exits during startup', async () => {
-    serverGroupProc = createServerGroupProcess(
-      3000,
-      getErrorConfig('EXIT_DURING_STARTUP')
-    )
+    proc = createServerGroupProcess(3000, getErrorConfig('EXIT_DURING_STARTUP'))
     const started = await Promise.race([
-      serverGroupProc.ready.then(() => true),
-      serverGroupProc.exited.then(() => false),
+      proc.ready.then(() => true),
+      proc.exited.then(() => false),
     ])
     expect(started).toBe(false)
-    await serverGroupProc.exited
-    expect(
-      serverGroupProc.output.includes(
-        'a      | [ERR] EXIT_DURING_STARTUP'
-      )
-    ).toBe(true)
+    await proc.exited
+    expect(proc.output.includes('a      | [ERR] EXIT_DURING_STARTUP')).toBe(
+      true
+    )
   })
   it('exits if a server exits after startup', async () => {
-    serverGroupProc = createServerGroupProcess(
-      3000,
-      getErrorConfig('EXIT_AFTER_STARTUP')
-    )
+    proc = createServerGroupProcess(3000, getErrorConfig('EXIT_AFTER_STARTUP'))
     const started = await Promise.race([
-      serverGroupProc.ready.then(() => true),
-      serverGroupProc.exited.then(() => false),
+      proc.ready.then(() => true),
+      proc.exited.then(() => false),
     ])
     expect(started).toBe(true)
-    await serverGroupProc.exited
-    expect(
-      serverGroupProc.output.includes(
-        'a      | [ERR] EXIT_AFTER_STARTUP'
-      )
-    ).toBe(true)
+    await proc.exited
+    expect(proc.output.includes('a      | [ERR] EXIT_AFTER_STARTUP')).toBe(true)
   })
 })
