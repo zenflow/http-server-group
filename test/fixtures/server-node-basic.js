@@ -1,9 +1,7 @@
 const { createServer } = require('http')
 
-const { KEY } = process.env
-
 const server = createServer((_, res) => {
-  res.write(KEY)
+  res.write(process.env.KEY)
   res.end()
 })
 

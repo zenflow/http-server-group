@@ -1,18 +1,17 @@
 const { createServer } = require('http')
 
-const { EXIT_DURING_STARTUP, EXIT_AFTER_STARTUP } = process.env
-
 const server = createServer(() => {})
 
-if (EXIT_DURING_STARTUP) {
-  setTimeout(() => {
-    throw new Error('EXIT_DURING_STARTUP')
-  }, 100)
-} else if (EXIT_AFTER_STARTUP) {
+if (process.env.EXIT_DURING_STARTUP) {
+  setTimeout(() => exit('EXIT_DURING_STARTUP'), 200)
+} else if (process.env.EXIT_AFTER_STARTUP) {
   server.listen(process.env.PORT, error => {
     if (error) throw error
-    setTimeout(() => {
-      throw new Error('EXIT_AFTER_STARTUP')
-    }, 100)
+    setTimeout(() => exit('EXIT_AFTER_STARTUP'), 200)
   })
+}
+
+function exit(message) {
+  process.stderr.write(`${message}\n`)
+  process.exit(1)
 }
