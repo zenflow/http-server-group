@@ -37,10 +37,8 @@ export function startHttpServerGroup(config: Config): void {
 
   const normalizedConfig = validateAndNormalizeConfig(config)
 
-  const managerLabel = '$manager'
   const proxyLabel = '$proxy'
   const maxLabelLength = Math.max(
-    managerLabel.length,
     proxyLabel.length,
     ...normalizedConfig.servers.map(({ label }) => label.length)
   )
@@ -54,7 +52,7 @@ export function startHttpServerGroup(config: Config): void {
   output.pipe(process.stdout)
 
   const logger = new Logger()
-  output.add(labelStream(managerLabel, logger))
+  output.add(logger)
   if (config.printConfig) {
     logger.log(
       `http-server-group config ${JSON.stringify(normalizedConfig, null, 2)}`

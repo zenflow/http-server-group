@@ -2,24 +2,23 @@
 
 exports[`basic has consistent output 1`] = `
 Object {
-  "": Array [],
-  "$manager": Array [
-    "$manager | Starting 'a'...",
-    "$manager | Starting 'b'...",
-    "$manager | Started 'a' @ http://localhost:3001",
-    "$manager | Started 'b' @ http://localhost:3002",
-    "$manager | Starting '$proxy'...",
-    "$manager | Started '$proxy' @ http://localhost:3000",
-    "$manager | Ready",
+  "": Array [
+    "Starting 'a'...",
+    "Starting 'b'...",
+    "Started 'a' @ http://localhost:3001",
+    "Started 'b' @ http://localhost:3002",
+    "Starting '$proxy'...",
+    "Started '$proxy' @ http://localhost:3000",
+    "Ready",
   ],
   "$proxy": Array [],
   "a": Array [
-    "a        | [out] Starting...",
-    "a        | [out] Started",
+    "a      | [out] Starting...",
+    "a      | [out] Started",
   ],
   "b": Array [
-    "b        | [out] Starting...",
-    "b        | [out] Started",
+    "b      | [out] Starting...",
+    "b      | [out] Started",
   ],
 }
 `;

@@ -65,26 +65,26 @@ describe('basic', () => {
     serverGroupProc = await getReadyServerGroupProcess(3000, basicConfig)
 
     const initialOutput = serverGroupProc.output.splice(0)
-    const labels = ['$manager', '$proxy', 'a', 'b']
+    const labels = ['$proxy', 'a', 'b']
     const deterministicOutput = sortLinesByLabel(labels, initialOutput)
     // mutate `deterministicOutput`, so that it's deterministic, so that it can be snapshotted
     {
       // Either server (a or b) can start first
-      const aStartedIndex = deterministicOutput.$manager.indexOf(
-        `$manager | Started 'a' @ http://localhost:3001`
+      const aStartedIndex = deterministicOutput[''].indexOf(
+        `Started 'a' @ http://localhost:3001`
       )
-      const bStartedIndex = deterministicOutput.$manager.indexOf(
-        `$manager | Started 'b' @ http://localhost:3002`
+      const bStartedIndex = deterministicOutput[''].indexOf(
+        `Started 'b' @ http://localhost:3002`
       )
       expect(aStartedIndex).not.toBe(-1)
       expect(bStartedIndex).not.toBe(-1)
       expect(Math.abs(aStartedIndex - bStartedIndex)).toBe(1)
       const firstStartedIndex = Math.min(aStartedIndex, bStartedIndex)
       const secondStartedIndex = Math.max(aStartedIndex, bStartedIndex)
-      const aStartedLine = deterministicOutput.$manager[aStartedIndex]
-      const bStartedLine = deterministicOutput.$manager[bStartedIndex]
-      deterministicOutput.$manager[firstStartedIndex] = aStartedLine
-      deterministicOutput.$manager[secondStartedIndex] = bStartedLine
+      const aStartedLine = deterministicOutput[''][aStartedIndex]
+      const bStartedLine = deterministicOutput[''][bStartedIndex]
+      deterministicOutput[''][firstStartedIndex] = aStartedLine
+      deterministicOutput[''][secondStartedIndex] = bStartedLine
     }
     expect(deterministicOutput).toMatchSnapshot()
 

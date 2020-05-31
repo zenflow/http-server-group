@@ -21,6 +21,7 @@ Run multiple http servers as one
 
 ## Feature ideas
 
+- `config.silent` boolean, default `false`
 - `config.defaultPort` fallback when `process.env.PORT` not defined
 - `config.server[].startupTimeout` milliseconds to wait for port to open before timeout error (currently it waits basically forever)
 - for *nix: graceful shutdown & `config.server[].forceKillTimeout` option (milliseconds to wait before sending SIGKILL)

@@ -55,7 +55,7 @@ export function createServerGroupProcess(
   }
   const ready: Promise<void> = new Promise(resolve =>
     outputStream.on('data', line => {
-      if (line.match(/^\$manager +\| Ready$/)) {
+      if (line === 'Ready') {
         resolve()
       }
     })

@@ -50,7 +50,7 @@ describe('failure', () => {
     await serverGroupProc.exited
     expect(
       serverGroupProc.output.includes(
-        'a        | [ERR] EXIT_DURING_STARTUP'
+        'a      | [ERR] EXIT_DURING_STARTUP'
       )
     ).toBe(true)
   })
@@ -67,7 +67,7 @@ describe('failure', () => {
     await serverGroupProc.exited
     expect(
       serverGroupProc.output.includes(
-        'a        | [ERR] EXIT_AFTER_STARTUP'
+        'a      | [ERR] EXIT_AFTER_STARTUP'
       )
     ).toBe(true)
   })
