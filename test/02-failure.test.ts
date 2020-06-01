@@ -69,7 +69,7 @@ describe('failure', () => {
       expect(initialOutput[9]).toBe('')
       expect(initialOutput[10]).toBe('')
       expect(initialOutput[11]).toBeUndefined()
-      await proc.kill()
+      await proc.exited
       expect(proc.output).toStrictEqual([])
     })
     it('before that server comes up', async () => {
