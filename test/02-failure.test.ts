@@ -8,7 +8,7 @@ import { Config } from '..'
 
 function getFailureConfig(
   failureEnv: { [key: string]: string },
-  basicEnv: { [key: string]: string } = {}
+  basicEnv: { [key: string]: string }
 ): Config {
   return {
     servers: [
@@ -39,11 +39,10 @@ describe('failure', () => {
     }
   })
   describe('exits when any server exits', () => {
-    // TODO: it('after that server comes up but before all servers are up')
     it('before any server comes up', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '500' })
+        getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
       )
       const started = await Promise.race([
         proc.ready.then(() => true),
@@ -57,25 +56,39 @@ describe('failure', () => {
         'a      | [ERR] ',
         'a      | [out] ',
       ])
-      expect(initialOutput[4]).toBe(
-        `ServerProcessExitedError: Server 'a' exited`
-      )
-      expect(initialOutput[5]).toBe('Exiting...')
+      expect(initialOutput[4]).toBe(`Server 'a' exited`)
+      // stops servers before they start
+      expect(initialOutput[5]).toBe('Stopping servers...')
       expect(initialOutput.slice(6, 8).sort()).toStrictEqual([
         'b      | [ERR] ',
         'b      | [out] ',
       ])
-      expect(initialOutput[8]).toBe('Exited')
+      expect(initialOutput[8]).toBe('Stopped servers')
       expect(initialOutput[9]).toBe('')
       expect(initialOutput[10]).toBe('')
       expect(initialOutput[11]).toBeUndefined()
       await proc.exited
       expect(proc.output).toStrictEqual([])
     })
-    it('before that server comes up', async () => {
+    it('before that server comes up but after other server is up', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' })
+        getFailureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
+      )
+      const started = await Promise.race([
+        proc.ready.then(() => true),
+        proc.exited.then(() => false),
+      ])
+      expect(started).toBe(false)
+      await proc.exited
+    })
+    it('after that server comes up but before other server is up', async () => {
+      proc = getServerGroupProcess(
+        3000,
+        getFailureConfig(
+          { EXIT_POST_START: '1', EXIT_DELAY: '500' },
+          { START_DELAY: '2000' }
+        )
       )
       const started = await Promise.race([
         proc.ready.then(() => true),
@@ -87,7 +100,7 @@ describe('failure', () => {
     it('after all servers are up', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '500' })
+        getFailureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '500' }, {})
       )
       const started = await Promise.race([
         proc.ready.then(() => true),

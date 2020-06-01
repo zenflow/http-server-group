@@ -5,7 +5,11 @@ const server = createServer((_, res) => {
   res.end()
 })
 
-server.listen(process.env.PORT, error => {
-  if (error) throw error
-  console.log('Started')
-})
+setTimeout(
+  () =>
+    server.listen(process.env.PORT, error => {
+      if (error) throw error
+      console.log('Started')
+    }),
+  Number.parseInt(process.env.START_DELAY || '0', 10)
+)
