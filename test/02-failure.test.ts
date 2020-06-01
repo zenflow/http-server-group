@@ -30,7 +30,7 @@ const failureConfig = (
 })
 
 describe('failure', () => {
-  jest.setTimeout(30 * 1000)
+  jest.setTimeout(30 * 1000) // set high for windows which takes forever (~15 seconds for me) to kill processes
   let proc: ServerGroupProcess | null = null
   afterEach(async () => {
     if (proc) {
