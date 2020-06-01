@@ -16,12 +16,12 @@
     "_build": "tsdx --target node --format cjs --entry src/index.ts --entry src/proxy.ts",
     "build": "yarn _build build && shx rm -rf dist/delete_me",
     "build-watch": "yarn _build watch",
-    "test": "tsdx test --maxWorkers=1",
-    "test-watch": "yarn test --watch",
-    "test-ci": "yarn test --ci",
+    "_test": "tsdx test --runInBand",
+    "test": "yarn _test --ci",
+    "test-watch": "yarn _test --watch",
     "lint": "tsdx lint",
     "lint-fix": "tsdx lint --fix",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build && yarn test"
   },
   "dependencies": {
     "connect": "^3.7.0",
