@@ -11,18 +11,18 @@ import { Config } from '..'
 const basicConfig: Config = {
   servers: [
     {
-      label: 'a',
-      env: { KEY: 'a' },
+      label: 'other',
+      env: { RESPONSE_TEXT: 'other' },
       command: ['node', 'test/fixtures/server-node-basic.js'],
       port: 3001,
-      paths: ['/a'],
+      paths: ['/other'],
     },
     {
-      label: 'b',
-      env: { KEY: 'b' },
+      label: 'default',
+      env: { RESPONSE_TEXT: 'default' },
       command: `node test/fixtures/server-node-basic.js`,
       port: 3002,
-      paths: ['/b'],
+      paths: ['/'],
     },
   ],
 }
@@ -37,32 +37,30 @@ describe('basic', () => {
   })
   it('works', async () => {
     proc = await getReadyServerGroupProcess(3000, basicConfig)
-    const [aText, bText] = await Promise.all([
-      fetchText('http://localhost:3000/a'),
-      fetchText('http://localhost:3000/b'),
-    ])
-    expect(aText).toEqual('a')
-    expect(bText).toEqual('b')
+    expect(await fetchText('http://localhost:3000/other')).toBe('other')
+    expect(await fetchText('http://localhost:3000/other/foo')).toBe('other')
+    expect(await fetchText('http://localhost:3000/')).toBe('default')
+    expect(await fetchText('http://localhost:3000/foo')).toBe('default')
   })
   it('has consistent output', async () => {
     proc = await getReadyServerGroupProcess(3000, basicConfig)
 
     const initialOutput = proc.output.splice(0)
-    expect(initialOutput[0]).toBe(`Starting server 'a'...`)
-    expect(initialOutput[1]).toBe(`Starting server 'b'...`)
-    const aOutStartedLine = initialOutput.indexOf(`a      | [out] Started`)
-    expect(aOutStartedLine).toBeGreaterThan(1)
-    const bOutStartedLine = initialOutput.indexOf(`b      | [out] Started`)
-    expect(bOutStartedLine).toBeGreaterThan(1)
-    const startedALine = initialOutput.indexOf(
-      `Started server 'a' @ http://localhost:3001`
+    expect(initialOutput[0]).toBe(`Starting server 'other'...`)
+    expect(initialOutput[1]).toBe(`Starting server 'default'...`)
+    const othOutStartedLine = initialOutput.indexOf(`other   | [out] Started`)
+    expect(othOutStartedLine).toBeGreaterThan(1)
+    const defOutStartedLine = initialOutput.indexOf(`default | [out] Started`)
+    expect(defOutStartedLine).toBeGreaterThan(1)
+    const startedOthLine = initialOutput.indexOf(
+      `Started server 'other' @ http://localhost:3001`
     )
-    expect(startedALine).toBeGreaterThan(aOutStartedLine)
-    const startedBLine = initialOutput.indexOf(
-      `Started server 'b' @ http://localhost:3002`
+    expect(startedOthLine).toBeGreaterThan(othOutStartedLine)
+    const startedDefLine = initialOutput.indexOf(
+      `Started server 'default' @ http://localhost:3002`
     )
-    expect(startedBLine).toBeGreaterThan(bOutStartedLine)
-    expect(Math.max(startedALine, startedBLine)).toBe(5)
+    expect(startedDefLine).toBeGreaterThan(defOutStartedLine)
+    expect(Math.max(startedOthLine, startedDefLine)).toBe(5)
     expect(initialOutput[6]).toBe(`Starting server '$proxy'...`)
     expect(initialOutput[7]).toBe(
       `Started server '$proxy' @ http://localhost:3000`

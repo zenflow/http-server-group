@@ -14,18 +14,18 @@ function getFailureConfig(
   return {
     servers: [
       {
-        label: 'a',
+        label: 'failure',
         env: failureEnv,
         command: ['node', 'test/fixtures/server-node-failure.js'],
         port: 3001,
-        paths: ['/a'],
+        paths: ['/doesntmatter'],
       },
       {
-        label: 'b',
+        label: 'default',
         env: basicEnv,
         command: `node test/fixtures/server-node-basic.js`,
         port: 3002,
-        paths: ['/b'],
+        paths: ['/'],
       },
     ],
   }
@@ -46,19 +46,19 @@ describe('failure', () => {
         getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting server 'a'...`)
-      expect(proc.output[1]).toBe(`Starting server 'b'...`)
+      expect(proc.output[0]).toBe(`Starting server 'failure'...`)
+      expect(proc.output[1]).toBe(`Starting server 'default'...`)
       expect(proc.output.slice(2, 4).sort()).toStrictEqual([
-        'a      | [ERR] ',
-        'a      | [out] ',
+        'failure | [ERR] ',
+        'failure | [out] ',
       ])
-      expect(proc.output[4]).toBe(`Server 'a' exited`)
+      expect(proc.output[4]).toBe(`Server 'failure' exited`)
       // doesn't start $proxy
       // stops other server before it becomes ready
       expect(proc.output[5]).toBe('Stopping servers...')
       expect(proc.output.slice(6, 8).sort()).toStrictEqual([
-        'b      | [ERR] ',
-        'b      | [out] ',
+        'default | [ERR] ',
+        'default | [out] ',
       ])
       expect(proc.output[8]).toBe('Stopped servers')
       expect(proc.output[9]).toBe('')
@@ -71,21 +71,23 @@ describe('failure', () => {
         getFailureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting server 'a'...`)
-      expect(proc.output[1]).toBe(`Starting server 'b'...`)
-      expect(proc.output[2]).toBe(`b      | [out] Started`)
-      expect(proc.output[3]).toBe(`Started server 'b' @ http://localhost:3002`)
+      expect(proc.output[0]).toBe(`Starting server 'failure'...`)
+      expect(proc.output[1]).toBe(`Starting server 'default'...`)
+      expect(proc.output[2]).toBe(`default | [out] Started`)
+      expect(proc.output[3]).toBe(
+        `Started server 'default' @ http://localhost:3002`
+      )
       expect(proc.output.slice(4, 6).sort()).toStrictEqual([
-        'a      | [ERR] ',
-        'a      | [out] ',
+        'failure | [ERR] ',
+        'failure | [out] ',
       ])
-      expect(proc.output[6]).toBe(`Server 'a' exited`)
+      expect(proc.output[6]).toBe(`Server 'failure' exited`)
       // doesn't start $proxy
       // stops other server
       expect(proc.output[7]).toBe('Stopping servers...')
       expect(proc.output.slice(8, 10).sort()).toStrictEqual([
-        'b      | [ERR] ',
-        'b      | [out] ',
+        'default | [ERR] ',
+        'default | [out] ',
       ])
       expect(proc.output[10]).toBe('Stopped servers')
       expect(proc.output[11]).toBe('')
@@ -101,21 +103,23 @@ describe('failure', () => {
         )
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting server 'a'...`)
-      expect(proc.output[1]).toBe(`Starting server 'b'...`)
-      expect(proc.output[2]).toBe(`a      | [out] Started`)
-      expect(proc.output[3]).toBe(`Started server 'a' @ http://localhost:3001`)
+      expect(proc.output[0]).toBe(`Starting server 'failure'...`)
+      expect(proc.output[1]).toBe(`Starting server 'default'...`)
+      expect(proc.output[2]).toBe(`failure | [out] Started`)
+      expect(proc.output[3]).toBe(
+        `Started server 'failure' @ http://localhost:3001`
+      )
       expect(proc.output.slice(4, 6).sort()).toStrictEqual([
-        'a      | [ERR] ',
-        'a      | [out] ',
+        'failure | [ERR] ',
+        'failure | [out] ',
       ])
-      expect(proc.output[6]).toBe(`Server 'a' exited`)
+      expect(proc.output[6]).toBe(`Server 'failure' exited`)
       // doesn't start $proxy
       // stops other server before it becomes ready
       expect(proc.output[7]).toBe('Stopping servers...')
       expect(proc.output.slice(8, 10).sort()).toStrictEqual([
-        'b      | [ERR] ',
-        'b      | [out] ',
+        'default | [ERR] ',
+        'default | [out] ',
       ])
       expect(proc.output[10]).toBe('Stopped servers')
       expect(proc.output[11]).toBe('')
@@ -128,8 +132,8 @@ describe('failure', () => {
         getFailureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '1000' }, {})
       )
       const initialOutput = proc.output.splice(0)
-      expect(initialOutput[0]).toBe(`Starting server 'a'...`)
-      expect(initialOutput[1]).toBe(`Starting server 'b'...`)
+      expect(initialOutput[0]).toBe(`Starting server 'failure'...`)
+      expect(initialOutput[1]).toBe(`Starting server 'default'...`)
       // don't bother with lines 2,3,4,5 because race conditions to deal with
       expect(initialOutput[6]).toBe(`Starting server '$proxy'...`)
       expect(initialOutput[7]).toBe(
@@ -140,16 +144,16 @@ describe('failure', () => {
       await proc.exited
       const finalOutput = proc.output.splice(0)
       expect(finalOutput.slice(0, 2).sort()).toStrictEqual([
-        'a      | [ERR] ',
-        'a      | [out] ',
+        'failure | [ERR] ',
+        'failure | [out] ',
       ])
-      expect(finalOutput[2]).toBe(`Server 'a' exited`)
+      expect(finalOutput[2]).toBe(`Server 'failure' exited`)
       expect(finalOutput[3]).toBe('Stopping servers...')
       expect(finalOutput.slice(4, 8).sort()).toStrictEqual([
-        '$proxy | [ERR] ',
-        '$proxy | [out] ',
-        'b      | [ERR] ',
-        'b      | [out] ',
+        '$proxy  | [ERR] ',
+        '$proxy  | [out] ',
+        'default | [ERR] ',
+        'default | [out] ',
       ])
       expect(finalOutput[8]).toBe('Stopped servers')
       expect(finalOutput[9]).toBe('')
