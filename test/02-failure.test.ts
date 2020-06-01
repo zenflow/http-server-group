@@ -5,30 +5,6 @@ import {
 } from './helpers/serverGroupProcess'
 // @ts-ignore
 import { Config } from '..'
-/*
-function getFailureConfig(
-  errorType: 'EXIT_PRE_START' | 'EXIT_POST_START'
-): Config {
-  return {
-    servers: [
-      {
-        label: 'a',
-        env: { [errorType]: '1', DELAY: '500' },
-        command: ['node', 'test/fixtures/server-node-failure.js'],
-        port: 3001,
-        paths: ['/a'],
-      },
-      {
-        label: 'b',
-        env: { KEY: 'b' },
-        command: `node test/fixtures/server-node-basic.js`,
-        port: 3002,
-        paths: ['/b'],
-      },
-    ],
-  }
-}
- */
 
 function getFailureConfig(
   failureEnv: { [key: string]: string },
