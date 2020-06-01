@@ -48,23 +48,25 @@ describe('basic', () => {
     proc = await getReadyServerGroupProcess(3000, basicConfig)
 
     const initialOutput = proc.output.splice(0)
-    expect(initialOutput[0]).toBe(`Starting 'a'...`)
-    expect(initialOutput[1]).toBe(`Starting 'b'...`)
+    expect(initialOutput[0]).toBe(`Starting server 'a'...`)
+    expect(initialOutput[1]).toBe(`Starting server 'b'...`)
     const aOutStartedLine = initialOutput.indexOf(`a      | [out] Started`)
     expect(aOutStartedLine).toBeGreaterThan(1)
     const bOutStartedLine = initialOutput.indexOf(`b      | [out] Started`)
     expect(bOutStartedLine).toBeGreaterThan(1)
     const startedALine = initialOutput.indexOf(
-      `Started 'a' @ http://localhost:3001`
+      `Started server 'a' @ http://localhost:3001`
     )
     expect(startedALine).toBeGreaterThan(aOutStartedLine)
     const startedBLine = initialOutput.indexOf(
-      `Started 'b' @ http://localhost:3002`
+      `Started server 'b' @ http://localhost:3002`
     )
     expect(startedBLine).toBeGreaterThan(bOutStartedLine)
     expect(Math.max(startedALine, startedBLine)).toBe(5)
-    expect(initialOutput[6]).toBe(`Starting '$proxy'...`)
-    expect(initialOutput[7]).toBe(`Started '$proxy' @ http://localhost:3000`)
+    expect(initialOutput[6]).toBe(`Starting server '$proxy'...`)
+    expect(initialOutput[7]).toBe(
+      `Started server '$proxy' @ http://localhost:3000`
+    )
     expect(initialOutput[8]).toBe('Ready')
     expect(initialOutput[9]).toBeUndefined()
 

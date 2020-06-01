@@ -46,8 +46,8 @@ describe('failure', () => {
         getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting 'a'...`)
-      expect(proc.output[1]).toBe(`Starting 'b'...`)
+      expect(proc.output[0]).toBe(`Starting server 'a'...`)
+      expect(proc.output[1]).toBe(`Starting server 'b'...`)
       expect(proc.output.slice(2, 4).sort()).toStrictEqual([
         'a      | [ERR] ',
         'a      | [out] ',
@@ -71,10 +71,10 @@ describe('failure', () => {
         getFailureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting 'a'...`)
-      expect(proc.output[1]).toBe(`Starting 'b'...`)
+      expect(proc.output[0]).toBe(`Starting server 'a'...`)
+      expect(proc.output[1]).toBe(`Starting server 'b'...`)
       expect(proc.output[2]).toBe(`b      | [out] Started`)
-      expect(proc.output[3]).toBe(`Started 'b' @ http://localhost:3002`)
+      expect(proc.output[3]).toBe(`Started server 'b' @ http://localhost:3002`)
       expect(proc.output.slice(4, 6).sort()).toStrictEqual([
         'a      | [ERR] ',
         'a      | [out] ',
@@ -101,10 +101,10 @@ describe('failure', () => {
         )
       )
       await proc.exited
-      expect(proc.output[0]).toBe(`Starting 'a'...`)
-      expect(proc.output[1]).toBe(`Starting 'b'...`)
+      expect(proc.output[0]).toBe(`Starting server 'a'...`)
+      expect(proc.output[1]).toBe(`Starting server 'b'...`)
       expect(proc.output[2]).toBe(`a      | [out] Started`)
-      expect(proc.output[3]).toBe(`Started 'a' @ http://localhost:3001`)
+      expect(proc.output[3]).toBe(`Started server 'a' @ http://localhost:3001`)
       expect(proc.output.slice(4, 6).sort()).toStrictEqual([
         'a      | [ERR] ',
         'a      | [out] ',
@@ -128,23 +128,13 @@ describe('failure', () => {
         getFailureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '1000' }, {})
       )
       const initialOutput = proc.output.splice(0)
-      expect(initialOutput[0]).toBe(`Starting 'a'...`)
-      expect(initialOutput[1]).toBe(`Starting 'b'...`)
-      const aOutStartedLine = initialOutput.indexOf(`a      | [out] Started`)
-      expect(aOutStartedLine).toBeGreaterThan(1)
-      const bOutStartedLine = initialOutput.indexOf(`b      | [out] Started`)
-      expect(bOutStartedLine).toBeGreaterThan(1)
-      const startedALine = initialOutput.indexOf(
-        `Started 'a' @ http://localhost:3001`
+      expect(initialOutput[0]).toBe(`Starting server 'a'...`)
+      expect(initialOutput[1]).toBe(`Starting server 'b'...`)
+      // don't bother with lines 2,3,4,5 because race conditions to deal with
+      expect(initialOutput[6]).toBe(`Starting server '$proxy'...`)
+      expect(initialOutput[7]).toBe(
+        `Started server '$proxy' @ http://localhost:3000`
       )
-      expect(startedALine).toBeGreaterThan(aOutStartedLine)
-      const startedBLine = initialOutput.indexOf(
-        `Started 'b' @ http://localhost:3002`
-      )
-      expect(startedBLine).toBeGreaterThan(bOutStartedLine)
-      expect(Math.max(startedALine, startedBLine)).toBe(5)
-      expect(initialOutput[6]).toBe(`Starting '$proxy'...`)
-      expect(initialOutput[7]).toBe(`Started '$proxy' @ http://localhost:3000`)
       expect(initialOutput[8]).toBe('Ready')
       expect(initialOutput[9]).toBeUndefined()
       await proc.exited

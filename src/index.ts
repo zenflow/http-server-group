@@ -129,13 +129,13 @@ function createServerProcess(
   config: ServerProcessConfig
 ): ServerProcess {
   const { label, env, command, host, port } = config
-  logger.log(`Starting '${label}'...`)
+  logger.log(`Starting server '${label}'...`)
   const { outputStream, exited, kill } = createProcess(command, {
     PORT: port,
     ...env,
   })
   const ready = waitUntilUsedOnHost(port, host, 500, 2147483647).then(() =>
-    logger.log(`Started '${label}' @ http://${host}:${port}`)
+    logger.log(`Started server '${label}' @ http://${host}:${port}`)
   )
   return { label, outputStream, exited, kill, ready }
 }
