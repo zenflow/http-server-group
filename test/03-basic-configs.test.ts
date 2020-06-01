@@ -23,7 +23,7 @@ describe('basic configs', () => {
         {
           label: 'only',
           env: { RESPONSE_TEXT: 'only' },
-          command: `node test/fixtures/server-node-basic.js`,
+          command: `node test/fixtures/server-node.js`,
           port: 3001,
           paths: ['/'],
         },

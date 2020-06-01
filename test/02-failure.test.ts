@@ -15,14 +15,14 @@ const failureConfig = (
     {
       label: 'failure',
       env: failureEnv,
-      command: ['node', 'test/fixtures/server-node-failure.js'],
+      command: ['node', 'test/fixtures/server-node.js'],
       port: 3001,
       paths: ['/doesntmatter'],
     },
     {
       label: 'default',
       env: basicEnv,
-      command: `node test/fixtures/server-node-basic.js`,
+      command: `node test/fixtures/server-node.js`,
       port: 3002,
       paths: ['/'],
     },
@@ -71,7 +71,7 @@ describe('failure', () => {
       await proc.exited
       expect(proc.output[0]).toBe(`Starting server 'failure'...`)
       expect(proc.output[1]).toBe(`Starting server 'default'...`)
-      expect(proc.output[2]).toBe(`default | [out] Started`)
+      expect(proc.output[2]).toBe(`default | [out] Started 🚀`)
       expect(proc.output[3]).toBe(
         `Started server 'default' @ http://localhost:3002`
       )
@@ -103,7 +103,7 @@ describe('failure', () => {
       await proc.exited
       expect(proc.output[0]).toBe(`Starting server 'failure'...`)
       expect(proc.output[1]).toBe(`Starting server 'default'...`)
-      expect(proc.output[2]).toBe(`failure | [out] Started`)
+      expect(proc.output[2]).toBe(`failure | [out] Started 🚀`)
       expect(proc.output[3]).toBe(
         `Started server 'failure' @ http://localhost:3001`
       )

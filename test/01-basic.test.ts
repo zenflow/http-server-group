@@ -13,14 +13,14 @@ const basicConfig = (): Config => ({
     {
       label: 'other',
       env: { RESPONSE_TEXT: 'other' },
-      command: ['node', 'test/fixtures/server-node-basic.js'],
+      command: ['node', 'test/fixtures/server-node.js'],
       port: 3001,
       paths: ['/other'],
     },
     {
       label: 'default',
       env: { RESPONSE_TEXT: 'default' },
-      command: `node test/fixtures/server-node-basic.js`,
+      command: `node test/fixtures/server-node.js`,
       port: 3002,
       paths: ['/'],
     },
@@ -48,9 +48,13 @@ describe('basic', () => {
     const initialOutput = proc.output.splice(0)
     expect(initialOutput[0]).toBe(`Starting server 'other'...`)
     expect(initialOutput[1]).toBe(`Starting server 'default'...`)
-    const othOutStartedLine = initialOutput.indexOf(`other   | [out] Started`)
+    const othOutStartedLine = initialOutput.indexOf(
+      `other   | [out] Started 🚀`
+    )
     expect(othOutStartedLine).toBeGreaterThan(1)
-    const defOutStartedLine = initialOutput.indexOf(`default | [out] Started`)
+    const defOutStartedLine = initialOutput.indexOf(
+      `default | [out] Started 🚀`
+    )
     expect(defOutStartedLine).toBeGreaterThan(1)
     const startedOthLine = initialOutput.indexOf(
       `Started server 'other' @ http://localhost:3001`
