@@ -78,7 +78,9 @@ async function doAsyncStartup(
     env: { HTTP_SERVER_GROUP_CONFIG: JSON.stringify(config) },
     command: ['node', `${__dirname}/proxy.js`],
     host: 'localhost',
-    port: parseInt(process.env.PORT as string, 10),
+    port: process.env.PORT
+      ? parseInt(process.env.PORT, 10)
+      : config.defaultPort,
   })
   await proxyProcess.ready
 }

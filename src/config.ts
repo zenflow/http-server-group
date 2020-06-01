@@ -3,6 +3,13 @@ import { assert } from './helpers'
 
 export { ProxyOptions }
 
+export interface Config {
+  printConfig?: boolean
+  defaultPort?: number
+  proxyOptions?: ProxyOptions
+  servers: Array<ServerConfig | Falsy>
+}
+
 export type Falsy = false | null | undefined
 
 export interface ServerConfig {
@@ -15,10 +22,11 @@ export interface ServerConfig {
   proxyOptions?: ProxyOptions
 }
 
-export interface Config {
-  printConfig?: boolean
-  proxyOptions?: ProxyOptions
-  servers: Array<ServerConfig | Falsy>
+export interface NormalizedConfig {
+  printConfig: boolean
+  defaultPort: number
+  proxyOptions: ProxyOptions
+  servers: Array<NormalizedServerConfig>
 }
 
 export interface NormalizedServerConfig {
@@ -31,14 +39,9 @@ export interface NormalizedServerConfig {
   proxyOptions: ProxyOptions
 }
 
-export interface NormalizedConfig {
-  printConfig: boolean
-  proxyOptions: ProxyOptions
-  servers: Array<NormalizedServerConfig>
-}
-
 export function validateAndNormalizeConfig(config: Config): NormalizedConfig {
   const printConfig = config.printConfig ?? false
+  const defaultPort = config.defaultPort ?? 3000
   const proxyOptions = config.proxyOptions ?? {}
   const filteredServers = config.servers.filter(Boolean) as Array<ServerConfig>
   const servers = filteredServers.map((server: ServerConfig, index) => {
@@ -56,5 +59,5 @@ export function validateAndNormalizeConfig(config: Config): NormalizedConfig {
     return { label, env, command, host, port, paths, proxyOptions }
   })
   assert(servers.length > 0, 'Must specify at least one server')
-  return { printConfig, proxyOptions, servers }
+  return { printConfig, defaultPort, proxyOptions, servers }
 }

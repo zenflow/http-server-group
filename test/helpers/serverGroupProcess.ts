@@ -20,13 +20,13 @@ export class ServerGroupProcessExitedError extends Error {
 }
 
 export function getServerGroupProcess(
-  port: number,
+  port: number | undefined,
   config: Config
 ): ServerGroupProcess {
-  const env = {
-    ...process.env,
-    PORT: String(port),
-    CONFIG: JSON.stringify(config),
+  const env = { ...process.env }
+  env.CONFIG = JSON.stringify(config)
+  if (typeof port !== 'undefined') {
+    env.PORT = String(port)
   }
   const script = join(__dirname, '../fixtures/server-group.js')
   const proc = spawn('node', [script], { env })
@@ -64,7 +64,7 @@ export function getServerGroupProcess(
 }
 
 export async function getReadyServerGroupProcess(
-  port: number,
+  port: number | undefined,
   config: Config
 ): Promise<ServerGroupProcess> {
   const proc = getServerGroupProcess(port, config)
