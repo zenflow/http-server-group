@@ -63,8 +63,39 @@ describe('failure', () => {
     }
   })
   describe('exits when any server exits', () => {
-    // TODO: it('before any server comes up')
     // TODO: it('after that server comes up but before all servers are up')
+    it('before any server comes up', async () => {
+      proc = getServerGroupProcess(
+        3000,
+        getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '500' })
+      )
+      const started = await Promise.race([
+        proc.ready.then(() => true),
+        proc.exited.then(() => false),
+      ])
+      expect(started).toBe(false)
+      const initialOutput = proc.output.splice(0)
+      expect(initialOutput[0]).toBe(`Starting 'a'...`)
+      expect(initialOutput[1]).toBe(`Starting 'b'...`)
+      expect(initialOutput.slice(2, 4).sort()).toStrictEqual([
+        'a      | [ERR] ',
+        'a      | [out] ',
+      ])
+      expect(initialOutput[4]).toBe(
+        `ServerProcessExitedError: Server 'a' exited`
+      )
+      expect(initialOutput[5]).toBe('Exiting...')
+      expect(initialOutput.slice(6, 8).sort()).toStrictEqual([
+        'b      | [ERR] ',
+        'b      | [out] ',
+      ])
+      expect(initialOutput[8]).toBe('Exited')
+      expect(initialOutput[9]).toBe('')
+      expect(initialOutput[10]).toBe('')
+      expect(initialOutput[11]).toBeUndefined()
+      await proc.kill()
+      expect(proc.output).toStrictEqual([])
+    })
     it('before that server comes up', async () => {
       proc = getServerGroupProcess(
         3000,
