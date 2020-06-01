@@ -1,7 +1,7 @@
 const { createServer } = require('http')
 
 const server = createServer((_, res) => {
-  res.write(process.env.RESPONSE_TEXT)
+  res.write(process.env.RESPONSE_TEXT || '')
   res.end()
 })
 
