@@ -7,29 +7,27 @@ import {
 // @ts-ignore
 import { Config } from '..'
 
-function getFailureConfig(
+const failureConfig = (
   failureEnv: { [key: string]: string },
   basicEnv: { [key: string]: string }
-): Config {
-  return {
-    servers: [
-      {
-        label: 'failure',
-        env: failureEnv,
-        command: ['node', 'test/fixtures/server-node-failure.js'],
-        port: 3001,
-        paths: ['/doesntmatter'],
-      },
-      {
-        label: 'default',
-        env: basicEnv,
-        command: `node test/fixtures/server-node-basic.js`,
-        port: 3002,
-        paths: ['/'],
-      },
-    ],
-  }
-}
+): Config => ({
+  servers: [
+    {
+      label: 'failure',
+      env: failureEnv,
+      command: ['node', 'test/fixtures/server-node-failure.js'],
+      port: 3001,
+      paths: ['/doesntmatter'],
+    },
+    {
+      label: 'default',
+      env: basicEnv,
+      command: `node test/fixtures/server-node-basic.js`,
+      port: 3002,
+      paths: ['/'],
+    },
+  ],
+})
 
 describe('failure', () => {
   jest.setTimeout(30 * 1000)
@@ -43,7 +41,7 @@ describe('failure', () => {
     it('before any server is ready', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
+        failureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
       )
       await proc.exited
       expect(proc.output[0]).toBe(`Starting server 'failure'...`)
@@ -68,7 +66,7 @@ describe('failure', () => {
     it('before that server is ready & after other server is ready', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
+        failureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
       )
       await proc.exited
       expect(proc.output[0]).toBe(`Starting server 'failure'...`)
@@ -97,7 +95,7 @@ describe('failure', () => {
     it('after that server is ready & before other server is ready', async () => {
       proc = getServerGroupProcess(
         3000,
-        getFailureConfig(
+        failureConfig(
           { EXIT_POST_START: '1', EXIT_DELAY: '500' },
           { START_DELAY: '2000' }
         )
@@ -129,7 +127,7 @@ describe('failure', () => {
     it('after all servers are up', async () => {
       proc = await getReadyServerGroupProcess(
         3000,
-        getFailureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '1000' }, {})
+        failureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '1000' }, {})
       )
       const initialOutput = proc.output.splice(0)
       expect(initialOutput[0]).toBe(`Starting server 'failure'...`)

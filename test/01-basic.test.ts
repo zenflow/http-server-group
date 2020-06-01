@@ -8,7 +8,7 @@ import {
 // @ts-ignore
 import { Config } from '..'
 
-const basicConfig: Config = {
+const basicConfig = (): Config => ({
   servers: [
     {
       label: 'other',
@@ -25,7 +25,7 @@ const basicConfig: Config = {
       paths: ['/'],
     },
   ],
-}
+})
 
 describe('basic', () => {
   jest.setTimeout(30 * 1000)
@@ -36,14 +36,14 @@ describe('basic', () => {
     }
   })
   it('works', async () => {
-    proc = await getReadyServerGroupProcess(3000, basicConfig)
+    proc = await getReadyServerGroupProcess(3000, basicConfig())
     expect(await fetchText('http://localhost:3000/other')).toBe('other')
     expect(await fetchText('http://localhost:3000/other/foo')).toBe('other')
     expect(await fetchText('http://localhost:3000/')).toBe('default')
     expect(await fetchText('http://localhost:3000/foo')).toBe('default')
   })
   it('has consistent output', async () => {
-    proc = await getReadyServerGroupProcess(3000, basicConfig)
+    proc = await getReadyServerGroupProcess(3000, basicConfig())
 
     const initialOutput = proc.output.splice(0)
     expect(initialOutput[0]).toBe(`Starting server 'other'...`)
