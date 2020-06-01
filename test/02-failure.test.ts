@@ -76,7 +76,6 @@ describe('failure', () => {
       ])
       expect(started).toBe(false)
       await proc.exited
-      expect(proc.output.includes('a      | [ERR] EXIT_PRE_START')).toBe(true)
     })
     it('after all servers are up', async () => {
       proc = getServerGroupProcess(
@@ -89,7 +88,6 @@ describe('failure', () => {
       ])
       expect(started).toBe(true)
       await proc.exited
-      expect(proc.output.includes('a      | [ERR] EXIT_POST_START')).toBe(true)
     })
   })
 })
