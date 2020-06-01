@@ -68,13 +68,9 @@ export async function getReadyServerGroupProcess(
   config: Config
 ): Promise<ServerGroupProcess> {
   const proc = getServerGroupProcess(port, config)
-  const started = await Promise.race([
-    proc.ready.then(() => true),
-    proc.exited.then(() => false),
+  await Promise.race([
+    proc.ready,
+    proc.exited.then(() => Promise.reject(new ServerGroupProcessExitedError())),
   ])
-  if (!started) {
-    await proc.kill()
-    throw new ServerGroupProcessExitedError()
-  }
   return proc
 }

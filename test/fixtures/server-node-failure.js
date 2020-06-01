@@ -7,6 +7,7 @@ if (process.env.EXIT_PRE_START) {
 } else if (process.env.EXIT_POST_START) {
   server.listen(process.env.PORT, error => {
     if (error) throw error
+    console.log('Started')
     exit()
   })
 }
