@@ -19,7 +19,7 @@ export class ServerGroupProcessExitedError extends Error {
   message = 'ServerGroupProcessExitedError'
 }
 
-export function createServerGroupProcess(
+export function getServerGroupProcess(
   port: number,
   config: Config
 ): ServerGroupProcess {
@@ -67,7 +67,7 @@ export async function getReadyServerGroupProcess(
   port: number,
   config: Config
 ): Promise<ServerGroupProcess> {
-  const proc = createServerGroupProcess(port, config)
+  const proc = getServerGroupProcess(port, config)
   const started = await Promise.race([
     proc.ready.then(() => true),
     proc.exited.then(() => false),
