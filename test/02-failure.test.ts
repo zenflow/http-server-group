@@ -41,7 +41,7 @@ describe('failure', () => {
     it('before any server is ready', async () => {
       proc = getServerGroupProcess(
         3000,
-        failureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '2000' })
+        failureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '5000' })
       )
       await proc.exited
       expect(proc.output[0]).toBe(`Starting server 'failure'...`)
@@ -96,8 +96,8 @@ describe('failure', () => {
       proc = getServerGroupProcess(
         3000,
         failureConfig(
-          { EXIT_POST_START: '1', EXIT_DELAY: '500' },
-          { START_DELAY: '2000' }
+          { EXIT_POST_START: '1', EXIT_DELAY: '1000' },
+          { START_DELAY: '5000' }
         )
       )
       await proc.exited
