@@ -1,8 +1,10 @@
 import { Options as ProxyOptions } from 'http-proxy-middleware'
-import { assert } from './util'
+import { assert } from './helpers'
 
 export { ProxyOptions }
+
 export type Falsy = false | null | undefined
+
 export interface ServerConfig {
   label?: string
   env?: object
@@ -12,11 +14,13 @@ export interface ServerConfig {
   paths?: Array<string>
   proxyOptions?: ProxyOptions
 }
+
 export interface Config {
   printConfig?: boolean
   proxyOptions?: ProxyOptions
   servers: Array<ServerConfig | Falsy>
 }
+
 export interface NormalizedServerConfig {
   label: string
   env: object
@@ -26,6 +30,7 @@ export interface NormalizedServerConfig {
   paths: Array<string>
   proxyOptions: ProxyOptions
 }
+
 export interface NormalizedConfig {
   printConfig: boolean
   proxyOptions: ProxyOptions

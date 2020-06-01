@@ -1,3 +1,3 @@
-const { startHttpServerGroup } = require('../..')
+const { start } = require('../..')
 
-startHttpServerGroup(JSON.parse(process.env.CONFIG))
+start(JSON.parse(process.env.CONFIG))

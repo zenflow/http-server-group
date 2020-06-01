@@ -6,7 +6,7 @@ import mergeStream from 'merge-stream'
 import splitStream from 'split'
 // @ts-ignore
 import { Config } from '../..'
-import { killProcessTree } from '../../src/util/killProcessTree'
+import { killProcessTree } from '../../src/helpers/killProcessTree'
 
 export interface ServerGroupProcess {
   output: string[]
