@@ -1,49 +1,48 @@
 // @ts-ignore
 import { fetchText } from './helpers/fetchText'
 import {
-  getReadyServerGroupProcess,
-  ServerGroupProcess,
+  getReadyCompositeServerProcess,
+  CompositeServerProcess,
   // @ts-ignore
-} from './helpers/serverGroupProcess'
-// @ts-ignore
-import { Config } from '..'
+} from './helpers/compositeServerProcess'
+import { CompositeServerConfig } from '..'
 
-const basicConfig = (): Config => ({
+const basicConfig = (): CompositeServerConfig => ({
   servers: [
     {
       label: 'other',
       env: { RESPONSE_TEXT: 'other' },
-      command: ['node', 'test/fixtures/server-node.js'],
+      command: ['node', 'test/fixtures/constituent-server.js'],
       port: 3001,
-      paths: ['/other'],
+      httpProxyPaths: ['/other'],
     },
     {
       label: 'default',
       env: { RESPONSE_TEXT: 'default' },
-      command: `node test/fixtures/server-node.js`,
+      command: `node test/fixtures/constituent-server.js`,
       port: 3002,
-      paths: ['/'],
+      httpProxyPaths: ['/'],
     },
   ],
 })
 
 describe('basic', () => {
   jest.setTimeout(30 * 1000) // set high for windows which takes forever (~15 seconds for me) to kill processes
-  let proc: ServerGroupProcess | null = null
+  let proc: CompositeServerProcess | null = null
   afterEach(async () => {
     if (proc) {
       await proc.kill()
     }
   })
   it('works', async () => {
-    proc = await getReadyServerGroupProcess(3000, basicConfig())
+    proc = await getReadyCompositeServerProcess(3000, basicConfig())
     expect(await fetchText('http://localhost:3000/other')).toBe('other')
     expect(await fetchText('http://localhost:3000/other/foo')).toBe('other')
     expect(await fetchText('http://localhost:3000/')).toBe('default')
     expect(await fetchText('http://localhost:3000/foo')).toBe('default')
   })
   it('has consistent output', async () => {
-    proc = await getReadyServerGroupProcess(3000, basicConfig())
+    proc = await getReadyCompositeServerProcess(3000, basicConfig())
 
     const initialOutput = proc.output.splice(0)
     expect(initialOutput[0]).toBe(`Starting server 'other'...`)

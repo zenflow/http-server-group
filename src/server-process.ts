@@ -5,7 +5,7 @@ import { createProcess, Logger } from './helpers'
 export interface ServerProcessConfig {
   label: string
   env: object
-  command: string | Array<string>
+  command: string | string[]
   host: string
   port: number
 }

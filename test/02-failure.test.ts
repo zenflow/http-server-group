@@ -1,37 +1,36 @@
 import {
-  getReadyServerGroupProcess,
-  getServerGroupProcess,
-  ServerGroupProcess,
+  getReadyCompositeServerProcess,
+  getCompositeServerProcess,
+  CompositeServerProcess,
   // @ts-ignore
-} from './helpers/serverGroupProcess'
-// @ts-ignore
-import { Config } from '..'
+} from './helpers/compositeServerProcess'
+import { CompositeServerConfig } from '..'
 
 const failureConfig = (
   failureEnv: { [key: string]: string },
   basicEnv: { [key: string]: string }
-): Config => ({
+): CompositeServerConfig => ({
   servers: [
     {
       label: 'failure',
       env: failureEnv,
-      command: ['node', 'test/fixtures/server-node.js'],
+      command: ['node', 'test/fixtures/constituent-server.js'],
       port: 3001,
-      paths: ['/doesntmatter'],
+      httpProxyPaths: ['/doesntmatter'],
     },
     {
       label: 'default',
       env: basicEnv,
-      command: `node test/fixtures/server-node.js`,
+      command: `node test/fixtures/constituent-server.js`,
       port: 3002,
-      paths: ['/'],
+      httpProxyPaths: ['/'],
     },
   ],
 })
 
 describe('failure', () => {
   jest.setTimeout(30 * 1000) // set high for windows which takes forever (~15 seconds for me) to kill processes
-  let proc: ServerGroupProcess | null = null
+  let proc: CompositeServerProcess | null = null
   afterEach(async () => {
     if (proc) {
       await proc.kill()
@@ -39,7 +38,7 @@ describe('failure', () => {
   })
   describe('exits when any server exits', () => {
     it('before any server is ready', async () => {
-      proc = getServerGroupProcess(
+      proc = getCompositeServerProcess(
         3000,
         failureConfig({ EXIT_PRE_START: '1' }, { START_DELAY: '5000' })
       )
@@ -64,7 +63,7 @@ describe('failure', () => {
       expect(proc.output[11]).toBeUndefined()
     })
     it('before that server is ready & after other server is ready', async () => {
-      proc = getServerGroupProcess(
+      proc = getCompositeServerProcess(
         3000,
         failureConfig({ EXIT_PRE_START: '1', EXIT_DELAY: '500' }, {})
       )
@@ -93,7 +92,7 @@ describe('failure', () => {
       expect(proc.output[13]).toBeUndefined()
     })
     it('after that server is ready & before other server is ready', async () => {
-      proc = getServerGroupProcess(
+      proc = getCompositeServerProcess(
         3000,
         failureConfig(
           { EXIT_POST_START: '1', EXIT_DELAY: '1000' },
@@ -125,7 +124,7 @@ describe('failure', () => {
       expect(proc.output[13]).toBeUndefined()
     })
     it('after all servers are up', async () => {
-      proc = await getReadyServerGroupProcess(
+      proc = await getReadyCompositeServerProcess(
         3000,
         failureConfig({ EXIT_POST_START: '1', EXIT_DELAY: '1000' }, {})
       )

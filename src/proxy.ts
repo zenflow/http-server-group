@@ -1,20 +1,20 @@
 import connect, { HandleFunction } from 'connect'
 import { createProxyMiddleware } from 'http-proxy-middleware'
-import { NormalizedConfig } from './config'
+import { NormalizedCompositeServerConfig } from './config'
 
-const config: NormalizedConfig = JSON.parse(
+const config: NormalizedCompositeServerConfig = JSON.parse(
   process.env.HTTP_SERVER_GROUP_CONFIG as string
 )
 
 const app = connect()
 
 config.servers
-  .filter(serverConfig => serverConfig.paths.length > 0)
+  .filter(serverConfig => serverConfig.httpProxyPaths.length > 0)
   .map(serverConfig =>
-    createProxyMiddleware(serverConfig.paths, {
+    createProxyMiddleware(serverConfig.httpProxyPaths, {
       logLevel: 'warn',
-      ...config.proxyOptions,
-      ...serverConfig.proxyOptions,
+      ...config.httpProxyOptions,
+      ...serverConfig.httpProxyOptions,
       target: `http://${serverConfig.host}:${serverConfig.port}`,
     })
   )

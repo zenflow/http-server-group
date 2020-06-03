@@ -1,5 +1,9 @@
 import mergeStream from 'merge-stream'
-import { Config, NormalizedConfig, validateAndNormalizeConfig } from './config'
+import {
+  CompositeServerConfig,
+  NormalizedCompositeServerConfig,
+  validateAndNormalizeConfig,
+} from './config'
 import { assert, Logger, mapStream, rightPad } from './helpers'
 import {
   ServerProcess,
@@ -9,8 +13,8 @@ import {
 
 let started: boolean = false
 
-export function start(config: Config): void {
-  assert(!started, 'Cannot start more than once')
+export function startCompositeServer(config: CompositeServerConfig): void {
+  assert(!started, 'Cannot start group server more than once')
   started = true
 
   const normalizedConfig = validateAndNormalizeConfig(config)
@@ -67,7 +71,7 @@ export function start(config: Config): void {
 }
 
 async function doAsyncStartup(
-  config: NormalizedConfig,
+  config: NormalizedCompositeServerConfig,
   getServerProcess: (config: ServerProcessConfig) => ServerProcess
 ): Promise<void> {
   const userServerProcesses = config.servers.map(getServerProcess)

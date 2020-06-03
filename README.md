@@ -1,32 +1,33 @@
-# http-server-group
+# composite-http-server
 
-Helps you to compose multiple http server programs into a single http server program.
+Helps you to compose a single http server program from multiple constituent server programs (http or not).
 
-Given a declarative configuration, including a description of a collection of `servers`, it will:
-- Start and manage child server processes, printing the stdout/stderr from each
-- Run a proxy server which forward requests to the designated child server
+Given a declarative configuration, including a description of a collection of constituent `servers`, it will:
+- Start and manage processes for constituent servers, interleaving and printing the stdout/stderr of each
+- Start an http server that proxies requests to the appropriate constituent server, as determined by configuration and the url path of the request
 
-Define your server group in a script like this one...
+Define your composite server in a script like this one...
 
 ```js
-// server-group.js
+// composite.js
 
-const { start } = require('http-server-group')
+const { startCompositeServer } = require('composite-http-server')
 
-start({
+startCompositeServer({
   defaultPort: 3000,
   servers: [
     {
       label: 'my-service',
       command: 'node my-service/server.js',
       port: 3001,
-      paths: ['/api/my-service'],
+      httpProxyPaths: ['/api/my-service'],
     },
     {
       label: 'web',
       command: 'node web/server.js',
       port: 3002,
-      paths: ['/'],
+      httpProxyPaths: ['/'],
+      httpProxyOptions: {}
     },
   ],
 })
@@ -35,7 +36,7 @@ start({
 Run it...
 
 ```
-$ node server-group.js
+$ node composite.js
 Starting server 'my-service'...
 Starting server 'web'...
 my-service | [out] Started 🚀
@@ -47,37 +48,37 @@ Started server '$proxy' @ http://localhost:3000
 Ready
 ```
 
-Now you have an http server running at http://localhost:3000 which proxies requests
-to either of two underlying "child" servers:
+Now you have an http server running at http://localhost:3000 which proxies requests to either of two underlying "constituent" servers:
 - all requests with URL under `/api/my-service` go to "my-service"
 - all other requests with URL under `/` go to "web"
 
 ### Features
 
-- The group server starts gracefully; It doesn't accept requests until every child server is accepting requests.
-- If any child server exits (i.e. crashes) the group server will kill the remaining children and exit.
-- You can define a server with **no** `paths`, if it is meant to be used only by other child servers in the group.
+- You can define a constituent server with **no** `httpProxyPaths`, if it is meant to be used only by other constituent servers and not accessible via the http proxy.
+- You can define a constituent server that is **not http**, as long as it conforms to the "Specs for generic 'server program'" as described below.
+- The composite server starts gracefully; It doesn't accept requests until every constituent server is accepting requests.
+- If any constituent server exits (i.e. crashes) the remaining constituent servers will be killed and the composite server will exit.
 
-### Specs for generic 'http server program'
+### Specs for generic 'server program'
 
-This describes behavior which is expected of the child servers you define, and which you can expect of the group server.
+This describes behavior which is expected of the constituent servers you define, and which you can expect of the composite server.
 
-- should not exit; should run until killed by another process
+- should not exit by itself; should run until killed by another process
 - must serve over the port designated by the `PORT` environment variable
 
 ### Configuration
 
-- `config.printConfig` (type: `boolean`; optional; default: `false`) If set to `true`, the effective configuration will be printed before starting the server group. Useful for debugging server groups that have dynamic configuration.
-- `config.defaultPort` (type: `number`; optional; default: `3000`) *Default* port for proxy to listen on. This is *only* used if the `PORT` environment variable is not defined.
-- `config.proxyOptions` (type: `ProxyOptions`; optional; default: `{}`) [http-proxy-middleware options](https://github.com/chimurai/http-proxy-middleware#options) (without `target` or `router`) to be used when proxying to *any* server. You can also set these options per-server with `config.servers[].proxyOptions`.
-- `config.servers[]` (required) Description of child servers. Must contain one or more elements.
-- `config.servers[].label` (type: `string`; optional; default: server's index in the array) Name used to identify this server in the console output.
-- `config.servers[].env` (type: `object`; optional; default: `{}`) Environment variables to use for this server process. The child server process will already inherit all the environment variables of it's parent, so there's no need to explicity propagate environment variables from the parent process. The server process will also already have `PORT` defined appropriately.
-- `config.servers[].command` (type: `string | string[]`; required) Command used to run the server. If it's a single string, it will be run with the system shell. If it's an array of strings, no shell is used, the first element is used as the binary, and the remaining elements are used as arguments. The server should behave according to "Specs for generic 'http server program'" (below).
-- `config.servers[].host` (type: `string`; optional; default: `'localhost'`) Hostname that http-server-group should expect server to serve on.
-- `config.servers[].port` (type: `number`; required) Port number that http-server-group should expect server to serve on. This is passed to the server process as the `PORT` environment variable for convenience.
-- `config.servers[].paths` (type: `string[]`; optional; default: `[]`) Paths to check when determining which server to proxy a request to. Each path must be absolute (i.e. start with `/`). Each request is proxied to first server that has a path that the request path is within. You may configure a server with *no* paths, meaning no requests will be proxied to it.
-- `config.servers[].proxyOptions` (type: `ProxyOptions`; optional; default: `{}`) [http-proxy-middleware options](https://github.com/chimurai/http-proxy-middleware#options) (without `target` or `router`) to be used when proxying to this server. You can also set these options globally with `config.proxyOptions`.
+- `config.printConfig` (type: `boolean`; optional; default: `false`) If set to `true`, the effective configuration will be printed before starting the composite server. Useful for debugging dynamic configurations.
+- `config.defaultPort` (type: `number`; optional; default: `3000`) *Default* port on which to start the composite server. This is *only* used if the `PORT` environment variable is not defined.
+- `config.httpProxyOptions` (type: `HttpProxyOptions`; optional; default: `{}`) [http-proxy-middleware options](https://github.com/chimurai/http-proxy-middleware#options) (without `target` or `router`) to be used when proxying to *any* of the described `servers`. You can also set these options per-server with `config.servers[].httpProxyOptions`.
+- `config.servers[]` (required) Description of constituent servers. Must contain one or more elements.
+- `config.servers[].label` (type: `string`; optional; default: server's index in the array) Symbol used to identify this server.
+- `config.servers[].env` (type: `object`; optional; default: `{}`) Environment variables to define for this server's process. It will already inherit all the environment variables of it's parent (the composite server process), so there's no need to explicitly propagate environment variables in your configuration. The constituent server process will also already have `PORT` defined appropriately.
+- `config.servers[].command` (type: `string | string[]`; required) Command used to run the server. If it's a single string, it will be run with the system shell. If it's an array of strings, no shell is used, the first element is used as the binary, and the remaining elements are used as arguments. The server should behave according to "Specs for generic 'http server program'" (above).
+- `config.servers[].host` (type: `string`; optional; default: `'localhost'`) Hostname that this server can be expected to start on.
+- `config.servers[].port` (type: `number`; required) Port number that this server can be expected to start on. This is passed to the constituent server process as the `PORT` environment variable.
+- `config.servers[].httpProxyPaths` (type: `string[]`; optional; default: `[]`) Absolute paths to check when determining which server to proxy an http request to. Each request is proxied to the first server that has a path that the request path is within.
+- `config.servers[].httpProxyOptions` (type: `HttpProxyOptions`; optional; default: `{}`) [http-proxy-middleware options](https://github.com/chimurai/http-proxy-middleware#options) (without `target` or `router`) to be used for the http proxy to this server. You can also set these options globally with `config.httpProxyOptions`.
 
 ## Motivation
 
@@ -97,17 +98,13 @@ and maybe multiple teams. For smaller projects, it seems that the "single servic
 Bear in mind that serious projects can often benefit from *starting out* small, and splitting out into separate
 services only as needed.
 
-If you are unable to *actually* build everything into a single http server program (by calling the server code from
-your own code) for whatever reason (maybe the composed server is written in a different language than the rest of the
-project, maybe it's source code is not available, maybe something else) then you can use http-server-group to do it virtually.
-
-**Alternate explanation** This package is intended to provide a painless and (provided your image already requires
-nodejs) lightweight way to [run multiple services in a Docker container](https://docs.docker.com/config/containers/multi-service_container/).
+If you are unable build everything into a single http server program running as a single process type (by calling the
+server code from your own code) for whatever reason (maybe the constituent server is written in a different language
+than the rest of the project, maybe its source code is not available, maybe something else) then you can use
+composite-http-server to build everything into a single http server program running multiple process types internally.
 
 ## Roadmap
 
-- main export `start` -> `startHttpServerGroup`
-- publish
 - use `npm-run-path` package
 - verify configured ports are available in "pre-flight check", & exit early/immediately if they are not
 - export a port finder utility (to be used with `start`)
@@ -118,10 +115,9 @@ nodejs) lightweight way to [run multiple services in a Docker container](https:/
     - printConfig
     - omitting server[].labels, ...
     - config that fails validation (also, in source, handle: same port used twice, same label used twice, etc.)
-    - server with no `paths`
-    - glob patterns in `paths`
-    - proxyOptions & `server[].proxyOptions`
-    - ...
+    - server with no `httpProxyPaths`
+    - glob patterns in `httpProxyPaths`
+    - httpProxyOptions & `server[].httpProxyOptions`
 
 ## Feature ideas
 

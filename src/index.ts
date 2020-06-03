@@ -1,2 +1,6 @@
-export { Config, ProxyOptions, ServerConfig } from './config'
-export { start } from './start'
+export {
+  CompositeServerConfig,
+  HttpProxyOptions,
+  ConstituentServerConfig,
+} from './config'
+export { startCompositeServer } from './composite-server'
