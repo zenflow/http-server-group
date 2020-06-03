@@ -7,7 +7,7 @@ export interface Config {
   printConfig?: boolean
   defaultPort?: number
   proxyOptions?: ProxyOptions
-  servers: Array<ServerConfig | Falsy>
+  servers: (ServerConfig | Falsy)[]
 }
 
 export type Falsy = false | null | undefined
@@ -15,10 +15,10 @@ export type Falsy = false | null | undefined
 export interface ServerConfig {
   label?: string
   env?: object
-  command: string | Array<string>
+  command: string | string[]
   host?: string
   port: number
-  paths?: Array<string>
+  paths?: string[]
   proxyOptions?: ProxyOptions
 }
 
@@ -26,16 +26,16 @@ export interface NormalizedConfig {
   printConfig: boolean
   defaultPort: number
   proxyOptions: ProxyOptions
-  servers: Array<NormalizedServerConfig>
+  servers: NormalizedServerConfig[]
 }
 
 export interface NormalizedServerConfig {
   label: string
   env: object
-  command: string | Array<string>
+  command: string | string[]
   host: string
   port: number
-  paths: Array<string>
+  paths: string[]
   proxyOptions: ProxyOptions
 }
 
@@ -52,10 +52,22 @@ export function validateAndNormalizeConfig(config: Config): NormalizedConfig {
       host = 'localhost',
       port,
       paths = [],
-      proxyOptions = {},
     } = server
-    assert(command, `Missing \`command\` for '${label}' server`)
-    assert(port, `Missing \`port\` for '${label}' server`)
+    assert(command, `Server '${label}' is missing \`command\``)
+    assert(port, `Server '${label}' is missing \`port\``)
+    assert(
+      paths.every(path => path[0] === '/'),
+      `Server '${label}' has some path(s) that are not absolute`
+    )
+    const proxyOptions = { ...(server.proxyOptions ?? {}) }
+    for (const forbiddenProxyOption of ['router', 'target']) {
+      if (forbiddenProxyOption in proxyOptions) {
+        console.warn(
+          `Warning: Ignoring \`proxyOptions.${forbiddenProxyOption}\` for server '${label}'`
+        )
+        delete (proxyOptions as any)[forbiddenProxyOption]
+      }
+    }
     return { label, env, command, host, port, paths, proxyOptions }
   })
   assert(servers.length > 0, 'Must specify at least one server')
